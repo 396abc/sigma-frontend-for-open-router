@@ -366,11 +366,21 @@ body{
 ============================================================ */
 .main{
   position: relative;
+  grid-column: 2; /* explicit on purpose — see note below */
   display: flex; flex-direction: column;
   min-width: 0; height: 100vh;
   height: 100dvh;
   height: var(--vh100, 100dvh);
 }
+/* .app has grown several fixed-position overlay children (modals, side
+   panels) beyond just .sidebar and .main. Grid auto-placement only
+   counts in-flow children, and on mobile .sidebar itself becomes
+   position:fixed — leaving .main as the ONLY in-flow child, which
+   auto-placement then drops into column 1 (the collapsed 0px sidebar
+   column) instead of column 2. The grid-column: 2 above is what
+   actually fixes the "chat squished to nothing" bug; everything else
+   in this file was a real fix for a real secondary issue, but this
+   was the one actually crushing the layout. */
 
 .topbar{
   display:flex; align-items:center; gap: 14px;
