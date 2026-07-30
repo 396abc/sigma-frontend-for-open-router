@@ -942,10 +942,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     </details>
 
     <div class="gate-caveat">
-      This runs two independent public IP-intelligence lookups against your resolved egress IP
-      and passes on any hit from either — still a best-effort heuristic, not a cryptographic
-      guarantee. Privacy extensions sometimes block the lookup calls themselves; if both fail,
-      the override below lets you through instead of hard-locking you out.
+      This runs four independent checks against your resolved egress IP — a dedicated VPN/proxy/Tor
+      database, an ASN/CDN keyword cross-check, a match against a known VPN-netblock CIDR list, and
+      a system-clock-vs-IP-timezone comparison — and passes on any single hit. Still a best-effort
+      heuristic, not a cryptographic guarantee. Privacy extensions sometimes block the lookup calls
+      themselves; if everything fails, the override below lets you through instead of hard-locking
+      you out.
     </div>
   </div>
 </div>
@@ -1137,17 +1139,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   // Org/ASN substrings that commonly show up on VPN exit nodes,
   // anonymizing relays, or the datacenter ranges VPN providers
   // rent — broad on purpose, since this runs as an OR alongside
-  // the dedicated VPN database below, not standalone.
+  // the dedicated VPN database below, not standalone. Includes
+  // major CDN/edge networks because privacy-relay products
+  // (iCloud Private Relay, Google One VPN, Cloudflare WARP)
+  // egress through generic-looking CDN/cloud org names rather
+  // than a named "VPN" brand.
   const VPN_HOST_KEYWORDS = [
     'vpn','nordvpn','nord security','tefincom','expressvpn','surfshark','mullvad','proton','protonvpn',
     'private internet access',' pia ','kape technologies','cyberghost','windscribe','ipvanish','hotspot shield',
     'tunnelbear','hide.me','purevpn','ivpn','perfect privacy','airvpn','torguard','privado','atlas vpn',
-    'strongvpn','vyprvpn','zenmate','browsec','urban vpn','psiphon','tor exit','anonymizer',
-    'amazon','aws','amazon.com','google cloud','google llc','microsoft azure','microsoft corporation',
+    'strongvpn','vyprvpn','zenmate','browsec','urban vpn','psiphon','tor exit','anonymizer','relay',
+    'amazon','aws','amazon.com','google cloud','google llc','google fi','microsoft azure','microsoft corporation',
     'digitalocean','linode','vultr','ovh','hetzner','choopa','m247','leaseweb','contabo',
     'scaleway','oracle cloud','psychz','g-core','frantech','packet','datacamp','host europe',
     'cloudflare','alibaba cloud','tencent cloud','upcloud','servermania','hostinger','ionos',
-    'quadranet','sharktech','worldstream','flokinet','njal.la','cdn77','gcore','netcup'
+    'quadranet','sharktech','worldstream','flokinet','njal.la','cdn77','gcore','netcup',
+    // CDN / edge networks (iCloud Private Relay, WARP, etc. egress here)
+    'fastly','akamai','edgecast','stackpath','limelight','lumen','incapsula','imperva','apple inc',
+    'apple cdn','section.io','ceres computing','tzulo','wired isp','wiredisp',
+    // generic hosting-language catch-alls
+    'hosting','data center','datacenter','colocation',' colo ','dedicated server','cloud services',
+    'network solutions','server ',' isp inc','isp llc'
   ];
 
   function logLine(text, kind){
@@ -1164,6 +1176,52 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     const t = setTimeout(() => ctrl.abort(), ms);
     try { return await fetch(url, { signal: ctrl.signal }); }
     finally { clearTimeout(t); }
+  }
+
+  // Static aggregated VPN-range database (X4BNet/lists_vpn) — this is
+  // the same public dataset production tools like Azure Sentinel's
+  // "Consumer VPN Logins" KQL query use for exactly this purpose.
+  // It's compiled from VPN providers' own published server ranges,
+  // so it catches known providers even when their exit IP's WHOIS
+  // org name looks nothing like "VPN" (generic reseller shells,
+  // white-labeled server names, etc). Fetched once and cached.
+  let vpnCidrCache = null;
+  function ipToInt(ip){
+    const parts = ip.split('.').map(Number);
+    if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return null;
+    return ((parts[0]<<24) >>> 0) + (parts[1]<<16) + (parts[2]<<8) + parts[3];
+  }
+  function ipInCidr(ipInt, base, bits){
+    if (bits === 0) return true;
+    const mask = bits >= 32 ? 0xFFFFFFFF : (~0 << (32 - bits)) >>> 0;
+    return (ipInt & mask) >>> 0 === (base & mask) >>> 0;
+  }
+  async function loadVpnCidrList(){
+    if (vpnCidrCache) return vpnCidrCache;
+    const res = await fetchWithTimeout('https://raw.githubusercontent.com/X4BNet/lists_vpn/main/output/vpn/ipv4.txt', 12000);
+    if (!res.ok) throw new Error('cidr list failed: ' + res.status);
+    const text = await res.text();
+    const entries = [];
+    text.split('\n').forEach(line => {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) return;
+      const [range, bitsStr] = t.split('/');
+      const base = ipToInt(range);
+      const bits = bitsStr ? parseInt(bitsStr, 10) : 32;
+      if (base !== null && !isNaN(bits)) entries.push({ base, bits });
+    });
+    vpnCidrCache = entries;
+    return entries;
+  }
+  async function checkCidrList(ip){
+    const list = await loadVpnCidrList();
+    const ipInt = ipToInt(ip);
+    const hit = ipInt !== null && list.some(e => ipInCidr(ipInt, e.base, e.bits));
+    return {
+      source: `X4BNet VPN range DB (${list.length.toLocaleString()} CIDRs)`,
+      ip, org: hit ? 'matched known VPN netblock' : '—', country: '—',
+      flags: { cidr_match: hit }, isVpn: hit,
+    };
   }
 
   // Resolve the browser's actual egress IP first via a dedicated,
@@ -1207,6 +1265,36 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       country: d.country_name || '—',
       flags: { keyword_match: hit || null },
       isVpn: !!hit,
+      utcOffset: d.utc_offset || null,   // e.g. "+0200" — used for the timezone check below
+      timezoneName: d.timezone || null,
+    };
+  }
+
+  // A VPN doesn't move your computer's clock — it only moves your
+  // apparent IP location. Someone genuinely browsing from Bulgaria
+  // has a system timezone that matches Bulgaria; someone tunneling
+  // through a Bulgarian exit node almost never bothers to change
+  // their OS timezone to match. Comparing the two independently of
+  // any VPN database catches exit nodes neither database has
+  // classified yet — this is the same signal ipapi.is cites using
+  // server-side. Threshold is 90 minutes to tolerate DST/half-hour
+  // zone edge cases.
+  function checkTimezoneMismatch(ipData){
+    if (!ipData || !ipData.utcOffset) return null;
+    const m = String(ipData.utcOffset).match(/^([+-])(\d{2})(\d{2})$/);
+    if (!m) return null;
+    const ipOffsetMin = (m[1] === '-' ? -1 : 1) * (parseInt(m[2],10)*60 + parseInt(m[3],10));
+    const browserOffsetMin = -new Date().getTimezoneOffset();
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+    const diff = Math.abs(ipOffsetMin - browserOffsetMin);
+    const fmt = min => (min>=0?'+':'-') + String(Math.floor(Math.abs(min)/60)).padStart(2,'0') + ':' + String(Math.abs(min)%60).padStart(2,'0');
+    return {
+      source: 'System clock vs IP-geolocated timezone',
+      ip: ipData.ip,
+      org: `browser: ${browserTz} (UTC${fmt(browserOffsetMin)})`,
+      country: `IP timezone: ${ipData.timezoneName || '—'} (UTC${fmt(ipOffsetMin)})`,
+      flags: { diff_minutes: diff },
+      isVpn: diff >= 90,
     };
   }
 
@@ -1252,8 +1340,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     statusTitle.textContent = title;
     glitchText(statusTitle, title);
     statusBody.textContent = errored
-      ? "Both IP-intelligence lookups were unreachable — blocked by a privacy extension, offline, or rate-limited. Your VPN status could not be confirmed either way."
-      : 'Your egress IP matches no known VPN, proxy, Tor, or datacenter range on either database. Bare residential/ISP traffic. Light up a tunnel and re-run the scan.';
+      ? "All lookups were unreachable — blocked by a privacy extension, offline, or rate-limited. Your VPN status could not be confirmed either way."
+      : 'No VPN/proxy database hit, no ASN/CDN keyword match, and your system clock matches your IP\'s timezone. Looks like bare residential traffic. Light up a tunnel and re-run the scan.';
     if (results && results.length) renderDetail(results);
     else detailEl.innerHTML = '';
     actionsEl.style.display = 'flex';
@@ -1278,15 +1366,47 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     }
 
     const l1 = logLine('Querying VPN exit-node database…', 'pending');
-    const l2 = logLine('Cross-referencing ASN / hosting registries…', 'pending');
+    const l2 = logLine('Cross-referencing ASN / CDN / hosting registries…', 'pending');
+    const l3 = logLine('Matching against known VPN netblock ranges…', 'pending');
     await new Promise(r => setTimeout(r, 200));
 
-    const settled = await Promise.allSettled([checkDedicated(ip), checkKeyword(ip)]);
+    const settled = await Promise.allSettled([checkDedicated(ip), checkKeyword(ip), checkCidrList(ip)]);
     const results = [];
+    let keywordData = null;
     if (settled[0].status === 'fulfilled'){ l1.className = 'gate-log-line ok'; results.push(settled[0].value); }
     else { l1.className = 'gate-log-line fail'; l1.querySelector('span:last-child').textContent = 'VPN exit-node database unreachable.'; }
-    if (settled[1].status === 'fulfilled'){ l2.className = 'gate-log-line ok'; results.push(settled[1].value); }
+    if (settled[1].status === 'fulfilled'){ l2.className = 'gate-log-line ok'; keywordData = settled[1].value; results.push(keywordData); }
     else { l2.className = 'gate-log-line fail'; l2.querySelector('span:last-child').textContent = 'ASN registry cross-check unreachable.'; }
+    if (settled[2].status === 'fulfilled'){ l3.className = 'gate-log-line ok'; results.push(settled[2].value); }
+    else { l3.className = 'gate-log-line fail'; l3.querySelector('span:last-child').textContent = 'VPN netblock list unreachable.'; }
+
+    // Cross-source org-attribution mismatch: two independent WHOIS
+    // databases disagreeing on who owns the same IP is unusual for
+    // stable residential allocations, and common for recently
+    // leased/rotated proxy or VPN infrastructure.
+    if (settled[0].status === 'fulfilled' && settled[1].status === 'fulfilled'){
+      const orgA = (settled[0].value.org || '').toLowerCase();
+      const orgB = (settled[1].value.org || '').toLowerCase();
+      const related = orgA === '—' || orgB === '—' || orgA.includes(orgB) || orgB.includes(orgA);
+      if (!related){
+        logLine('ASN attribution conflict between sources — anomalous.', 'ok');
+        results.push({
+          source: 'Cross-source ASN attribution check',
+          ip, org: `"${settled[0].value.org}" vs "${settled[1].value.org}"`, country: '—',
+          flags: { conflict: true }, isVpn: true,
+        });
+      }
+    }
+
+    // Timezone vs IP-geolocation mismatch — independent of both
+    // databases above, catches gaps in VPN-provider coverage.
+    if (keywordData){
+      const tzResult = checkTimezoneMismatch(keywordData);
+      if (tzResult){
+        logLine(tzResult.isVpn ? 'System clock does not match IP timezone — anomalous.' : 'System clock matches IP timezone.', 'ok');
+        results.push(tzResult);
+      }
+    }
 
     await new Promise(r => setTimeout(r, 200));
     const anyHit = results.some(r => r.isVpn);
