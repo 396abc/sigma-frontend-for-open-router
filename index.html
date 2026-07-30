@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 <meta name="theme-color" content="#060907" />
 <title>Niche Underground AI Site</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -106,6 +106,8 @@ body{
   display: grid;
   grid-template-columns: 280px 1fr;
   height: 100vh;
+  height: 100dvh; /* accounts for mobile browser chrome (address bar) showing/hiding; 100vh alone pushes content below the visible screen on mobile */
+  height: var(--vh100, 100dvh); /* most robust: exact pixel height computed in JS from window.innerHeight, works even without dvh support */
   transition: grid-template-columns .45s var(--ease);
 }
 .app.sidebar-collapsed{ grid-template-columns: 0px 1fr; }
@@ -364,9 +366,21 @@ body{
 ============================================================ */
 .main{
   position: relative;
+  grid-column: 2; /* explicit on purpose — see note below */
   display: flex; flex-direction: column;
   min-width: 0; height: 100vh;
+  height: 100dvh;
+  height: var(--vh100, 100dvh);
 }
+/* .app has grown several fixed-position overlay children (modals, side
+   panels) beyond just .sidebar and .main. Grid auto-placement only
+   counts in-flow children, and on mobile .sidebar itself becomes
+   position:fixed — leaving .main as the ONLY in-flow child, which
+   auto-placement then drops into column 1 (the collapsed 0px sidebar
+   column) instead of column 2. The grid-column: 2 above is what
+   actually fixes the "chat squished to nothing" bug; everything else
+   in this file was a real fix for a real secondary issue, but this
+   was the one actually crushing the layout. */
 
 .topbar{
   display:flex; align-items:center; gap: 14px;
@@ -1054,12 +1068,12 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   .app.sidebar-open .sidebar{ transform: translateX(0); box-shadow: 30px 0 60px rgba(0,0,0,.55); }
   .app.sidebar-open .sidebar-scrim{ display:block; opacity:1; }
 
-  .topbar{ padding: 12px 14px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 10px; }
+  .topbar{ padding: 12px 10px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 6px; }
   .topbar-meters{ display:none; }
-  .topbar-title{ font-size: 12px; max-width: 46vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar-title{ font-size: 11.5px; max-width: 28vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .topbar-sub{ display:none; }
 
-  .icon-btn{ width: 38px; height: 38px; }
+  .icon-btn{ width: 34px; height: 34px; flex-shrink: 0; }
 
   .chat-scroll{ padding: 18px 12px 240px; }
   .scroll-bottom-btn{ bottom: 230px; }
@@ -1384,6 +1398,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 <script>
 /* ============================================================
+   VIEWPORT HEIGHT FIX — mobile browsers lie about 100vh (it
+   ignores the address bar / on-screen keyboard). 100dvh fixes
+   this on browsers that support it, but as a more bulletproof
+   fallback that works everywhere, this also computes the real
+   visible height in JS and exposes it as --vh100, which .app
+   and .main both prefer over the CSS-only units. Kept updated
+   on resize/orientation-change/keyboard-open so the layout
+   never gets left sized to a viewport that no longer exists.
+============================================================ */
+(function viewportHeightFix(){
+  function setVh(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--vh100', h + 'px');
+  }
+  setVh();
+  window.addEventListener('resize', setVh);
+  window.addEventListener('orientationchange', () => setTimeout(setVh, 50));
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', setVh);
+    window.visualViewport.addEventListener('scroll', setVh);
+  }
+})();
+
+/* ============================================================
    OPSEC GATE — best-effort client-side VPN/proxy detection.
    Runs TWO independent IP-intelligence lookups in parallel
    (dedicated VPN/proxy/datacenter/Tor database + ASN keyword
@@ -1707,7 +1745,6 @@ const TIPS = [
   { title: 'Getting the API key', body: 'Go to https://openrouter.ai/ and get an api key, then add it in the bottom left. Youre literally all set after that' },
   // ← add more tips here, same shape as above
 ];
-
 // Hardcoded, editable system-prompt presets. Picking one overwrites
 // the textarea; further edits are free-form and persist regardless
 // of which preset (if any) was last selected.
@@ -1768,6 +1805,7 @@ const AUTO_PERSONALITY_MAP = {
   'deepseek/deepseek-v3.1-terminus': 'deepseekjailbreak3',
   // ← add more model → preset mappings here
 };
+
 
 const state = {
   sidebarOpen: window.innerWidth > 900,
@@ -2310,7 +2348,7 @@ function setPersonalityLock(locked){
   if (wrap) wrap.classList.toggle('locked', locked);
   el.promptPanelHint.textContent = locked
     ? 'Locked — AutoJailbreak is setting this for the model. Turn it off in Options to edit manually.'
-    : 'Presets are hardcoded starting points — pick one, then edit freely. Applies to every session and is saved locally.';
+    : 'Jailbroken prompts are hardcoded presets that automatically set the system prompt.';
   el.promptPanelHint.classList.toggle('locked-note', locked);
 }
 
