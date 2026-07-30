@@ -1245,6 +1245,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   const detailEl = document.getElementById('gateDetail');
   const actionsEl = document.getElementById('gateActions');
   const retryBtn = document.getElementById('gateRetry');
+  // Local on purpose — this IIFE must never depend on anything declared
+  // outside it, since this gate can end up shipped standalone.
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
   const appEl = document.getElementById('app');
 
   // Org/ASN substrings that commonly show up on VPN exit nodes,
