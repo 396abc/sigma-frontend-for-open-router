@@ -471,7 +471,33 @@ body{
 .msg.user .msg-role{ color: var(--amber); }
 .msg.ai .msg-role{ color: var(--phosphor); }
 .msg-time{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); }
-.msg-hash{ font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); margin-left: auto; }
+.msg-actions{
+  display:flex; align-items:center; gap: 2px; margin-left: auto; opacity: 0;
+  transition: opacity .15s;
+}
+.msg:hover .msg-actions, .msg:focus-within .msg-actions{ opacity: 1; }
+.msg-action-btn{
+  width: 20px; height: 20px; border-radius: 5px; display:flex; align-items:center; justify-content:center;
+  background: none; border: none; color: var(--text-dim); cursor: pointer; transition: all .15s;
+}
+.msg-action-btn:hover{ color: var(--text-hi); background: rgba(255,255,255,0.06); }
+.msg-action-btn.danger:hover{ color: var(--danger); background: rgba(255,92,92,0.1); }
+.msg-edit-textarea{
+  width: 100%; min-height: 60px; resize: vertical;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm); padding: 10px 12px; color: var(--text-hi);
+  font-family: var(--font-body); font-size: 13.8px; line-height: 1.6; outline: none;
+}
+.msg-edit-textarea:focus{ border-color: var(--phosphor-dim); }
+.msg-edit-actions{ display:flex; justify-content:flex-end; gap: 8px; margin-top: 8px; }
+.msg-edit-btn{
+  font-family: var(--font-mono); font-size: 11px; padding: 6px 12px; border-radius: var(--r-sm);
+  cursor: pointer; border: 1px solid var(--hair-strong); background: rgba(255,255,255,0.03); color: var(--text);
+  transition: all .15s;
+}
+.msg-edit-btn:hover{ background: rgba(255,255,255,0.06); }
+.msg-edit-btn.save{ background: linear-gradient(150deg, var(--phosphor), #1fae6e); color: #06120c; border: none; font-weight: 600; }
+.msg-edit-btn.save:hover{ filter: brightness(1.08); }
 
 .bubble{
   background: var(--panel);
@@ -1009,7 +1035,6 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 
   .msg-avatar{ width: 26px; height: 26px; }
   .bubble{ font-size: 13.5px; padding: 11px 13px; }
-  .msg-hash{ display:none; }
 
   .foot-hint{ font-size: 9px; }
 }
@@ -1026,6 +1051,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   /* touch devices: skip magnetic drift, rely on tap feedback */
   .magnetic{ transition: transform .12s var(--ease); }
   .session-actions{ opacity: 1; }
+  .msg-actions{ opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -2594,17 +2620,93 @@ function buildMessageNode(m){
     if (searches) bits.push('🔍 ' + searches);
     if (bits.length) usageHtml = `<div class="usage-line">${bits.join(' · ')}</div>`;
   }
+  const editable = m.role === 'user' || m.role === 'assistant';
+  const actionsHtml = editable ? `
+      <div class="msg-actions">
+        <button class="msg-action-btn" data-action="edit" title="Edit" aria-label="Edit message">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+        </button>
+        <button class="msg-action-btn danger" data-action="delete" title="Delete" aria-label="Delete message">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>` : '';
   wrap.innerHTML = `
     <div class="msg-avatar">${avatarLabel}</div>
     <div class="msg-body">
       <div class="msg-head">
         <span class="msg-role">${roleLabel}</span>
         <span class="msg-time">${m.time || ''}</span>
+        ${actionsHtml}
       </div>
       ${m.reasoningHtml || ''}
       <div class="bubble">${m.html || ''}${citationsHtml}${usageHtml}</div>
     </div>`;
+  if (editable && m.hash){
+    const editBtn = wrap.querySelector('[data-action="edit"]');
+    const deleteBtn = wrap.querySelector('[data-action="delete"]');
+    if (editBtn) editBtn.addEventListener('click', () => startEditMessage(wrap, m));
+    if (deleteBtn) deleteBtn.addEventListener('click', () => deleteMessage(m.hash));
+  }
   return wrap;
+}
+
+function startEditMessage(wrap, m){
+  if (state.inFlight){ systemBubble('Wait for the current response to finish (or stop it) before editing.'); return; }
+  const bubble = wrap.querySelector('.bubble');
+  const original = bubble.innerHTML;
+  const isUser = m.role === 'user';
+  bubble.innerHTML = `
+    <textarea class="msg-edit-textarea">${escapeHtml(m.raw || '')}</textarea>
+    <div class="msg-edit-actions">
+      <button class="msg-edit-btn cancel" type="button">Cancel</button>
+      <button class="msg-edit-btn save" type="button">${isUser ? 'Save & Regenerate' : 'Save'}</button>
+    </div>`;
+  const textarea = bubble.querySelector('.msg-edit-textarea');
+  textarea.style.height = Math.min(textarea.scrollHeight, 320) + 'px';
+  textarea.addEventListener('input', () => { textarea.style.height = 'auto'; textarea.style.height = Math.min(textarea.scrollHeight, 320) + 'px'; });
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  bubble.querySelector('.cancel').addEventListener('click', () => { bubble.innerHTML = original; });
+  bubble.querySelector('.save').addEventListener('click', () => saveEditMessage(m.hash, textarea.value));
+}
+
+function saveEditMessage(hash, newText){
+  const s = currentSession();
+  if (!s) return;
+  const idx = s.messages.findIndex(x => x.hash === hash);
+  if (idx === -1) return;
+  const trimmed = newText.trim();
+  if (!trimmed) return;
+
+  const msg = s.messages[idx];
+  msg.raw = trimmed;
+  msg.apiContent = Array.isArray(msg.apiContent)
+    ? msg.apiContent.map(part => part.type === 'text' ? { ...part, text: trimmed } : part)
+    : trimmed;
+  msg.html = renderMarkdownLite(trimmed);
+
+  if (msg.role === 'user'){
+    // Editing your own message re-forks the conversation from here —
+    // drop everything after it and regenerate, same as ChatGPT/Claude.
+    s.messages = s.messages.slice(0, idx + 1);
+    renderMessages();
+    saveSessions();
+    streamCompletion(s);
+  } else {
+    renderMessages();
+    saveSessions();
+  }
+}
+
+function deleteMessage(hash){
+  if (state.inFlight){ systemBubble('Wait for the current response to finish (or stop it) before deleting.'); return; }
+  const s = currentSession();
+  if (!s) return;
+  if (!confirm('Delete this message? This cannot be undone.')) return;
+  s.messages = s.messages.filter(x => x.hash !== hash);
+  renderMessages();
+  renderSessionList();
+  saveSessions();
 }
 function isNearBottom(){
   const c = el.chatScroll;
@@ -2636,14 +2738,13 @@ function buildApiMessages(sessionMessages){
 }
 
 function systemBubble(text){
-  const s = currentSession();
-  const msg = { role: 'system', html: `<p>${escapeHtml(text)}</p>`, time: nowTime(), hash: randomHash() };
-  if (s){ s.messages.push(msg); }
+  // Shown in the live view only — deliberately NOT pushed into
+  // s.messages or persisted, so errors don't clutter saved history
+  // or get resent as context on the next request.
+  const msg = { role: 'system', html: `<p>${escapeHtml(text)}</p>`, time: nowTime() };
   if (el.emptyState.parentElement) el.emptyState.remove();
   el.chatInner.appendChild(buildMessageNode(msg));
   scrollToBottom();
-  renderSessionList();
-  saveSessions();
 }
 
 function trySend(){
@@ -2741,9 +2842,11 @@ async function streamCompletion(session){
       headers: {
         'Authorization': `Bearer ${state.apiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
       },
       body: JSON.stringify(body),
       signal: controller.signal,
+      cache: 'no-store',
     });
 
     if (!res.ok){
@@ -2751,7 +2854,16 @@ async function streamCompletion(session){
       const msg = (errBody && errBody.error && errBody.error.message) || `HTTP ${res.status}`;
       typingNode.remove();
       if (res.status === 401) systemBubble(`Authentication failed: ${msg}. Check your API key.`);
-      else if (res.status === 402) systemBubble(`Out of credits: ${msg}.`);
+      else if (res.status === 402){
+        const isMaxTokensReservation = /more credits, or fewer max_tokens/i.test(msg);
+        if (isMaxTokensReservation && !state.maxTokensEnabled){
+          systemBubble(`Out of credits: ${msg} — Turn on the max_tokens toggle in Options (composer top row) and set a lower cap; without it, the provider reserves its full max output against your balance on every request.`);
+        } else if (isMaxTokensReservation){
+          systemBubble(`Out of credits: ${msg} — Lower max_tokens in Options (composer top row) to something your balance can cover, e.g. 1024–2048.`);
+        } else {
+          systemBubble(`Out of credits: ${msg}`);
+        }
+      }
       else if (res.status === 429) systemBubble(`Rate limited: ${msg}. Wait a moment and retry.`);
       else systemBubble(`Request failed (${res.status}): ${msg}`);
       state.inFlight = false;
