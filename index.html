@@ -2772,6 +2772,9 @@ function renderMessages(){
 function messageActionsHtml(){
   return `
       <div class="msg-actions">
+        <button class="msg-action-btn" data-action="retry" title="Retry" aria-label="Retry from this message">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
         <button class="msg-action-btn" data-action="edit" title="Edit" aria-label="Edit message">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
         </button>
@@ -2782,10 +2785,29 @@ function messageActionsHtml(){
 }
 function wireMessageActions(wrap, m){
   if (!m.hash) return;
+  const retryBtn = wrap.querySelector('[data-action="retry"]');
   const editBtn = wrap.querySelector('[data-action="edit"]');
   const deleteBtn = wrap.querySelector('[data-action="delete"]');
+  if (retryBtn) retryBtn.addEventListener('click', () => retryMessage(m.hash));
   if (editBtn) editBtn.addEventListener('click', () => startEditMessage(wrap, m));
   if (deleteBtn) deleteBtn.addEventListener('click', () => deleteMessage(m.hash));
+}
+
+// Retry a user message: keep it, drop everything after, regenerate.
+// Retry an assistant message: drop it (and anything after), regenerate
+// a fresh reply from the same preceding context.
+function retryMessage(hash){
+  if (state.inFlight){ systemBubble('Wait for the current response to finish (or stop it) before retrying.'); return; }
+  const s = currentSession();
+  if (!s) return;
+  const idx = s.messages.findIndex(x => x.hash === hash);
+  if (idx === -1) return;
+  const msg = s.messages[idx];
+  s.messages = msg.role === 'user' ? s.messages.slice(0, idx + 1) : s.messages.slice(0, idx);
+  renderMessages();
+  updateContextMeterForSession(s);
+  saveSessions();
+  streamCompletion(s);
 }
 
 function buildMessageNode(m){
@@ -3198,7 +3220,16 @@ async function streamCompletion(session){
 ============================================================ */
 (function matrixRain(){
   const canvas = document.getElementById('particleCanvas');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+  if (!ctx){
+    // Some hardened/privacy browsers deliberately return null here as
+    // anti-fingerprinting protection. This is purely decorative, so just
+    // skip it — critically, this must never throw, since an uncaught
+    // error here would halt every statement after it in this script tag,
+    // including the entire app INIT block below.
+    canvas && canvas.remove();
+    return;
+  }
   const GLYPHS = 'アカサタナハマヤラワガザダバパイキシチニヒミリヰギジヂビピウクスツヌフムユルグズヅブプエケセテネヘメレヱゲゼデベペオコソトノホモヨロヲゴゾドボポヴッン0123456789';
   const FONT_SIZE = 15;
   let cols, drops, w, h;
@@ -3211,31 +3242,37 @@ async function streamCompletion(session){
   }
 
   function tick(){
-    // fading trail: translucent black wash instead of a full clear
-    ctx.fillStyle = 'rgba(6,9,7,0.08)';
-    ctx.fillRect(0, 0, w, h);
+    try {
+      // fading trail: translucent black wash instead of a full clear
+      ctx.fillStyle = 'rgba(6,9,7,0.08)';
+      ctx.fillRect(0, 0, w, h);
 
-    ctx.font = FONT_SIZE + 'px "IBM Plex Mono", monospace';
-    for (let i = 0; i < cols; i++){
-      const glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-      const x = i * FONT_SIZE;
-      const y = drops[i] * FONT_SIZE;
+      ctx.font = FONT_SIZE + 'px "IBM Plex Mono", monospace';
+      for (let i = 0; i < cols; i++){
+        const glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        const x = i * FONT_SIZE;
+        const y = drops[i] * FONT_SIZE;
 
-      // leading character brighter/whiter, trail phosphor green,
-      // rare amber glyph for the accent color
-      const roll = Math.random();
-      ctx.fillStyle = roll < 0.02 ? '#eaf7ef' : roll < 0.05 ? 'rgba(255,180,84,0.75)' : 'rgba(61,255,160,0.55)';
-      ctx.fillText(glyph, x, y);
+        // leading character brighter/whiter, trail phosphor green,
+        // rare amber glyph for the accent color
+        const roll = Math.random();
+        ctx.fillStyle = roll < 0.02 ? '#eaf7ef' : roll < 0.05 ? 'rgba(255,180,84,0.75)' : 'rgba(61,255,160,0.55)';
+        ctx.fillText(glyph, x, y);
 
-      if (y > h && Math.random() > 0.975) drops[i] = 0;
-      drops[i]++;
+        if (y > h && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+      requestAnimationFrame(tick);
+    } catch (e) {
+      // Never let a rendering hiccup here cascade into anything else.
     }
-    requestAnimationFrame(tick);
   }
 
-  window.addEventListener('resize', resize);
-  resize();
-  tick();
+  try {
+    window.addEventListener('resize', resize);
+    resize();
+    tick();
+  } catch (e) { /* decorative only — fail silently */ }
 })();
 
 /* ============================================================
