@@ -518,7 +518,10 @@ body{
 .bubble code.inline{
   background: rgba(61,255,160,0.08); color: var(--phosphor);
   padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); font-size: 12.5px;
+  cursor: pointer; transition: background .15s, color .15s;
 }
+.bubble code.inline:hover{ background: rgba(61,255,160,0.16); }
+.bubble code.inline.copied{ background: var(--phosphor); color: #06120c; }
 
 .codeblock{
   margin: 10px 0; border-radius: var(--r-sm); overflow:hidden;
@@ -2553,7 +2556,7 @@ function renderMarkdownLite(raw){
     return `\u0000CODEBLOCK${blocks.length-1}\u0000`;
   });
   text = escapeHtml(text);
-  text = text.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+  text = text.replace(/`([^`]+)`/g, '<code class="inline" title="Click to copy">$1</code>');
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   const lines = text.split('\n');
   let html = ''; let inList = false;
@@ -2649,6 +2652,14 @@ document.addEventListener('click', e => {
   const head = e.target.closest('.reasoning-head');
   if (!head) return;
   head.closest('.reasoning').classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  const code = e.target.closest('.bubble code.inline');
+  if (!code) return;
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    code.classList.add('copied');
+    setTimeout(() => code.classList.remove('copied'), 700);
+  });
 });
 
 /* ============================================================
