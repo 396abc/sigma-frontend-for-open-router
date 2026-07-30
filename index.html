@@ -531,6 +531,7 @@ body{
   border-bottom: 1px solid var(--hair);
   font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute);
 }
+.codeblock-actions{ display:flex; align-items:center; gap: 6px; }
 .copy-btn{
   display:flex; align-items:center; gap:5px;
   background: none; border: 1px solid var(--hair-strong); color: var(--text-mute);
@@ -540,6 +541,7 @@ body{
 }
 .copy-btn:hover{ color: var(--phosphor); border-color: var(--phosphor-dim); }
 .copy-btn.copied{ color: var(--phosphor); border-color: var(--phosphor); }
+.download-btn:hover{ color: #6fd8ff; border-color: rgba(111,216,255,.5); }
 .codeblock pre{
   margin:0; padding: 12px 14px; overflow-x:auto;
   font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
@@ -2578,15 +2580,36 @@ function highlightCode(code){
   return c;
 }
 let codeBlockCounter = 0;
+const LANG_EXT = {
+  python: 'py', py: 'py', javascript: 'js', js: 'js', typescript: 'ts', ts: 'ts',
+  jsx: 'jsx', tsx: 'tsx', html: 'html', css: 'css', scss: 'scss', json: 'json',
+  yaml: 'yml', yml: 'yml', bash: 'sh', sh: 'sh', shell: 'sh', zsh: 'sh',
+  powershell: 'ps1', java: 'java', c: 'c', cpp: 'cpp', 'c++': 'cpp', csharp: 'cs',
+  'c#': 'cs', go: 'go', golang: 'go', rust: 'rs', rs: 'rs', ruby: 'rb', rb: 'rb',
+  php: 'php', sql: 'sql', lua: 'lua', kotlin: 'kt', swift: 'swift', dart: 'dart',
+  xml: 'xml', markdown: 'md', md: 'md', toml: 'toml', dockerfile: 'Dockerfile',
+  makefile: 'Makefile', ini: 'ini', diff: 'diff', graphql: 'graphql', r: 'r',
+};
+function extForLang(lang){
+  const key = (lang || '').trim().toLowerCase();
+  return LANG_EXT[key] || 'txt';
+}
+
 function renderCodeBlock(lang, code){
   const id = 'cb-' + (codeBlockCounter++);
   return `<div class="codeblock">
     <div class="codeblock-head">
       <span>${escapeHtml(lang)}</span>
-      <button class="copy-btn" data-target="${id}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        copy
-      </button>
+      <div class="codeblock-actions">
+        <button class="copy-btn" data-target="${id}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          copy
+        </button>
+        <button class="copy-btn download-btn" data-target="${id}" data-lang="${escapeHtml(lang)}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          download
+        </button>
+      </div>
     </div>
     <pre id="${id}" data-raw="${encodeURIComponent(code)}">${highlightCode(code)}</pre>
   </div>`;
@@ -2595,7 +2618,27 @@ document.addEventListener('click', e => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
   const pre = document.getElementById(btn.dataset.target);
-  navigator.clipboard.writeText(decodeURIComponent(pre.dataset.raw)).then(() => {
+  const raw = decodeURIComponent(pre.dataset.raw);
+
+  if (btn.classList.contains('download-btn')){
+    const ext = extForLang(btn.dataset.lang);
+    const filename = (ext === 'Dockerfile' || ext === 'Makefile') ? ext : `snippet-${btn.dataset.target}.${ext}`;
+    const blob = new Blob([raw], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    const original = btn.innerHTML;
+    btn.innerHTML = 'saved ✓';
+    setTimeout(() => { btn.innerHTML = original; }, 1400);
+    return;
+  }
+
+  navigator.clipboard.writeText(raw).then(() => {
     btn.classList.add('copied');
     const original = btn.innerHTML;
     btn.innerHTML = 'copied ✓';
