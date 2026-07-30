@@ -106,6 +106,7 @@ body{
   display: grid;
   grid-template-columns: 280px 1fr;
   height: 100vh;
+  height: 100dvh; /* accounts for mobile browser chrome (address bar) showing/hiding; 100vh alone pushes content below the visible screen on mobile */
   transition: grid-template-columns .45s var(--ease);
 }
 .app.sidebar-collapsed{ grid-template-columns: 0px 1fr; }
@@ -366,6 +367,7 @@ body{
   position: relative;
   display: flex; flex-direction: column;
   min-width: 0; height: 100vh;
+  height: 100dvh;
 }
 
 .topbar{
