@@ -2602,6 +2602,25 @@ function renderMessages(){
     scrollToBottom(true);
   }, 120);
 }
+function messageActionsHtml(){
+  return `
+      <div class="msg-actions">
+        <button class="msg-action-btn" data-action="edit" title="Edit" aria-label="Edit message">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+        </button>
+        <button class="msg-action-btn danger" data-action="delete" title="Delete" aria-label="Delete message">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>`;
+}
+function wireMessageActions(wrap, m){
+  if (!m.hash) return;
+  const editBtn = wrap.querySelector('[data-action="edit"]');
+  const deleteBtn = wrap.querySelector('[data-action="delete"]');
+  if (editBtn) editBtn.addEventListener('click', () => startEditMessage(wrap, m));
+  if (deleteBtn) deleteBtn.addEventListener('click', () => deleteMessage(m.hash));
+}
+
 function buildMessageNode(m){
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + m.role;
@@ -2621,15 +2640,7 @@ function buildMessageNode(m){
     if (bits.length) usageHtml = `<div class="usage-line">${bits.join(' · ')}</div>`;
   }
   const editable = m.role === 'user' || m.role === 'assistant';
-  const actionsHtml = editable ? `
-      <div class="msg-actions">
-        <button class="msg-action-btn" data-action="edit" title="Edit" aria-label="Edit message">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
-        </button>
-        <button class="msg-action-btn danger" data-action="delete" title="Delete" aria-label="Delete message">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-        </button>
-      </div>` : '';
+  const actionsHtml = editable ? messageActionsHtml() : '';
   wrap.innerHTML = `
     <div class="msg-avatar">${avatarLabel}</div>
     <div class="msg-body">
@@ -2960,11 +2971,15 @@ async function streamCompletion(session){
       (citations.length ? `<div class="citations">${citations.map(c => `<a class="citation-chip" href="${escapeHtml(c.url)}" target="_blank" rel="noopener" title="${escapeHtml(c.title||c.url)}">${escapeHtml(c.title || c.url)}</a>`).join('')}</div>` : '') +
       (usageBits.length ? `<div class="usage-line">${usageBits.join(' · ')}</div>` : '');
 
-    session.messages.push({
+    const finalMsg = {
       role: 'assistant', raw: contentText, apiContent: contentText, html: finalHtml,
       time: nowTime(), hash, citations, usage, modelLabel,
       reasoningHtml: reasoningText ? node.querySelector('.reasoning').outerHTML : '',
-    });
+    };
+    session.messages.push(finalMsg);
+    const headEl = node.querySelector('.msg-head');
+    headEl.insertAdjacentHTML('beforeend', messageActionsHtml());
+    wireMessageActions(node, finalMsg);
 
     if (usage){
       el.tokenMeter.textContent = `${formatCtx((usage.prompt_tokens||0) + (usage.completion_tokens||0))} / ${formatCtx(state.ctxMax)}`;
@@ -2977,11 +2992,15 @@ async function streamCompletion(session){
       if (node && contentText){
         const finalHtml = renderMarkdownLite(contentText) + '<div class="usage-line">stopped</div>';
         node.querySelector('.bubble').innerHTML = finalHtml;
-        session.messages.push({
+        const finalMsg = {
           role: 'assistant', raw: contentText, apiContent: contentText, html: finalHtml,
           time: nowTime(), hash: hash || randomHash(), citations, usage, modelLabel: currentModelLabel(),
           reasoningHtml: reasoningText && node ? node.querySelector('.reasoning').outerHTML : '',
-        });
+        };
+        session.messages.push(finalMsg);
+        const headEl = node.querySelector('.msg-head');
+        headEl.insertAdjacentHTML('beforeend', messageActionsHtml());
+        wireMessageActions(node, finalMsg);
       } else {
         typingNode.remove();
         if (node) node.remove();
