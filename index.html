@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#060907" />
-<title>MainframeOpSec AI — Secure Operations Console</title>
+<title>Niche Underground AI Site — Secure Operations Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -1078,7 +1078,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>
       <h2>OPSEC LEVEL CHECK</h2>
     </div>
-    <div class="gate-sub">MAINFRAME/OPSEC</div>
+    <div class="gate-sub">NICHE/UNDERGROUND</div>
 
     <div class="gate-progress-track"><div class="gate-progress-fill" id="gateProgressFill"></div></div>
     <div class="gate-status-line" id="gateStatusLine">Initializing…</div>
@@ -1102,7 +1102,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">MAINFRAME<span class="slash">/</span>OPSEC<span class="brand-cursor"></span></div>
+      <div class="brand-mark">NICHE<span class="slash">/</span>UNDERGROUND<span class="brand-cursor"></span></div>
     </div>
 
     <button class="new-session" id="newSessionBtn">
@@ -1230,7 +1230,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
           <div class="empty-glyph">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3dffa0" stroke-width="1.6"><path d="M4 17V7a2 2 0 012-2h8l6 6v6a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 5v6h6"/></svg>
           </div>
-          <h2>MainframeOpSec AI</h2>
+          <h2>Niche Underground AI Site</h2>
           <p>Secure operations console. Query system logs, review architecture, or open a new session below.</p>
           <div class="suggestion-grid">
             <button class="suggestion" data-prompt="Audit our firewall ruleset for stale allowlist entries.">
@@ -1636,6 +1636,21 @@ const CURATED_MODEL_IDS = [
 // Hardcoded, editable system-prompt presets. Picking one overwrites
 // the textarea; further edits are free-form and persist regardless
 // of which preset (if any) was last selected.
+/* ============================================================
+   ★ SYSTEM PROMPT PRESETS — EDIT ME ★
+   Everything a user can pick from the preset dropdown lives here.
+   To add a new preset: copy the block below, give it a unique
+   key (used internally, not shown), a label (shown in the
+   dropdown), and the prompt text itself. That's it — the
+   dropdown, the auto-personality mapping below, and the
+   preset-auto-detect-on-load logic all pick it up automatically.
+
+   Template to copy:
+     mykey: {
+       label: 'My Preset Name',
+       prompt: 'Your system prompt text here.',
+     },
+============================================================ */
 const SYSTEM_PRESETS = {
   mainframe: {
     label: 'MainframeOpSec Default',
@@ -1657,12 +1672,23 @@ const SYSTEM_PRESETS = {
     label: 'Creative Writer',
     prompt: 'You are a skilled creative writing collaborator. Favor vivid, specific prose over generic description. Match the tone and voice the user establishes rather than defaulting to a neutral register.',
   },
+  // ← add more presets here, same shape as above
 };
 
-// Auto-personality: hardcoded model → preset mapping. Edit the values
-// (preset keys from SYSTEM_PRESETS above) to change which personality
-// each model gets when the Auto-personality toggle is on. Models not
-// listed fall back to AUTO_PERSONALITY_DEFAULT.
+/* ============================================================
+   ★ AUTO-PERSONALITY MAPPING — EDIT ME ★
+   When the Auto-personality toggle is on, this decides which
+   SYSTEM_PRESETS key gets applied for each model. Left side is
+   the model's id exactly as OpenRouter reports it (same string
+   shown in the model dropdown / CURATED_MODEL_IDS below); right
+   side is any key from SYSTEM_PRESETS above.
+
+   To add a new mapping: add one line —
+     'provider/model-id': 'presetKey',
+   A model NOT listed here is treated as unsupported: switching to it
+   (or turning the toggle on while it's selected) shows a notice and
+   turns Auto-personality back off, rather than silently guessing.
+============================================================ */
 const AUTO_PERSONALITY_MAP = {
   'deepseek/deepseek-v3.1-terminus': 'mainframe',
   'qwen/qwen3-235b-a22b-2507': 'concise',
@@ -1670,8 +1696,8 @@ const AUTO_PERSONALITY_MAP = {
   'inclusionai/ling-1t': 'reviewer',
   'inclusionai/ring-1t': 'reviewer',
   'moonshotai/kimi-k2-0905': 'writer',
+  // ← add more model → preset mappings here
 };
-const AUTO_PERSONALITY_DEFAULT = 'mainframe';
 
 const state = {
   sidebarOpen: window.innerWidth > 900,
@@ -2200,9 +2226,28 @@ function setPersonalityLock(locked){
 }
 
 // Hardcoded model → preset mapping (see AUTO_PERSONALITY_MAP above).
+// Pure check, no side effects — run first so callers can branch on the
+// result before touching any state. "Supported" means the model has an
+// explicit entry in AUTO_PERSONALITY_MAP; there's no silent default.
+function modelSupportsAutoPersonality(modelId){
+  return Object.prototype.hasOwnProperty.call(AUTO_PERSONALITY_MAP, modelId);
+}
+
 function applyAutoPersonality(){
   if (!state.autoPersonality) return;
-  const key = AUTO_PERSONALITY_MAP[state.selectedModelId] || AUTO_PERSONALITY_DEFAULT;
+
+  if (!modelSupportsAutoPersonality(state.selectedModelId)){
+    state.autoPersonality = false;
+    el.autoPersonalityToggle.classList.remove('on');
+    el.autoPersonalityToggle.setAttribute('aria-checked', 'false');
+    setPersonalityLock(false);
+    updateOptionsBadge();
+    saveSettings();
+    systemBubble(`${currentModelLabel()} doesn't support Auto-personality — turned it off. Add it to AUTO_PERSONALITY_MAP to enable.`);
+    return;
+  }
+
+  const key = AUTO_PERSONALITY_MAP[state.selectedModelId];
   const preset = SYSTEM_PRESETS[key];
   if (!preset) return;
   state.systemPrompt = preset.prompt;
@@ -2210,6 +2255,18 @@ function applyAutoPersonality(){
   el.systemPresetSelect.value = key;
   refreshDropdown(el.systemPresetSelect);
   saveSettings();
+}
+
+// The preset dropdown defaults to "— Custom —" unless told otherwise —
+// this checks the current prompt text against every known preset and
+// selects the matching one, so a saved/restored prompt that happens to
+// equal a preset shows as that preset instead of just "Custom". Call
+// this any time state.systemPrompt is set from outside the preset
+// dropdown's own change handler (e.g. on load).
+function syncPresetSelectToPrompt(){
+  const match = Object.keys(SYSTEM_PRESETS).find(key => SYSTEM_PRESETS[key].prompt === state.systemPrompt);
+  el.systemPresetSelect.value = match || '';
+  refreshDropdown(el.systemPresetSelect);
 }
 
 function updateOptionsBadge(){
@@ -2426,10 +2483,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && el.payloadPanel.classList.contains('open')) closePayloadPanel();
 });
 
-function openPayloadPanel(){
+function refreshPayloadPanel(){
   el.payloadContent.textContent = state.lastPayload
     ? JSON.stringify(state.lastPayload, null, 2)
     : '// no request sent yet';
+}
+function openPayloadPanel(){
+  refreshPayloadPanel();
   el.payloadPanel.classList.add('open');
   el.payloadScrim.classList.add('open');
 }
@@ -2444,7 +2504,7 @@ el.payloadCopyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(el.payloadContent.textContent).then(() => {
     const original = el.payloadCopyBtn.innerHTML;
     el.payloadCopyBtn.innerHTML = 'copied ✓';
-    setTimeout(() => { el.payloadCopyBtn.innerHTML = original; }, 1400);
+    setTimeout(() => { el.payloadCopyBtn.innerHTML = original; }, 700);
   });
 });
 el.systemPresetSelect.addEventListener('change', () => {
@@ -2637,7 +2697,7 @@ document.addEventListener('click', e => {
     URL.revokeObjectURL(url);
     const original = btn.innerHTML;
     btn.innerHTML = 'saved ✓';
-    setTimeout(() => { btn.innerHTML = original; }, 1400);
+    setTimeout(() => { btn.innerHTML = original; }, 700);
     return;
   }
 
@@ -2645,7 +2705,7 @@ document.addEventListener('click', e => {
     btn.classList.add('copied');
     const original = btn.innerHTML;
     btn.innerHTML = 'copied ✓';
-    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1400);
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 700);
   });
 });
 document.addEventListener('click', e => {
@@ -2658,7 +2718,7 @@ document.addEventListener('click', e => {
   if (!code) return;
   navigator.clipboard.writeText(code.textContent).then(() => {
     code.classList.add('copied');
-    setTimeout(() => code.classList.remove('copied'), 700);
+    setTimeout(() => code.classList.remove('copied'), 350);
   });
 });
 
@@ -2919,6 +2979,7 @@ async function streamCompletion(session){
   if (state.fastMode) body.provider = { sort: 'throughput' };
   if (state.webSearch) body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
   state.lastPayload = body;
+  if (el.payloadPanel.classList.contains('open')) refreshPayloadPanel();
 
   let contentText = '';
   let reasoningText = '';
@@ -3167,6 +3228,7 @@ if (savedSettings){
   el.webSearchToggle.classList.toggle('on', state.webSearch);
   el.webSearchToggle.setAttribute('aria-checked', String(state.webSearch));
   el.systemPromptInput.value = state.systemPrompt;
+  syncPresetSelectToPrompt();
 
   state.maxTokensEnabled = savedSettings.maxTokensEnabled !== false;
   el.maxTokensToggle.classList.toggle('on', state.maxTokensEnabled);
