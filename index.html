@@ -139,14 +139,14 @@ body{
   border-bottom: 1px solid var(--hair);
 }
 .brand-mark{
-  display:flex; align-items:baseline; gap: 8px;
+  display:flex; align-items:baseline; gap: 6px; flex-wrap: wrap;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 0.5px;
+  font-size: 12.5px;
+  letter-spacing: 0.4px;
+  line-height: 1.35;
   color: var(--text-hi);
 }
-.brand-mark .slash{ color: var(--phosphor); }
 .brand-cursor{
   display:inline-block; width:8px; height:15px; background: var(--phosphor);
   box-shadow: 0 0 8px var(--phosphor-glow);
@@ -1078,7 +1078,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>
       <h2>OPSEC LEVEL CHECK</h2>
     </div>
-    <div class="gate-sub">NICHE/UNDERGROUND</div>
+    <div class="gate-sub">NICHE UNDERGROUND AI SITE</div>
 
     <div class="gate-progress-track"><div class="gate-progress-fill" id="gateProgressFill"></div></div>
     <div class="gate-status-line" id="gateStatusLine">Initializing…</div>
@@ -1102,7 +1102,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">NICHE<span class="slash">/</span>UNDERGROUND<span class="brand-cursor"></span></div>
+      <div class="brand-mark">NICHE UNDERGROUND AI SITE<span class="brand-cursor"></span></div>
     </div>
 
     <button class="new-session" id="newSessionBtn">
