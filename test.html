@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 <meta name="theme-color" content="#060907" />
 <title>Niche Underground AI Site — Secure Operations Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,6 +107,7 @@ body{
   grid-template-columns: 280px 1fr;
   height: 100vh;
   height: 100dvh; /* accounts for mobile browser chrome (address bar) showing/hiding; 100vh alone pushes content below the visible screen on mobile */
+  height: var(--vh100, 100dvh); /* most robust: exact pixel height computed in JS from window.innerHeight, works even without dvh support */
   transition: grid-template-columns .45s var(--ease);
 }
 .app.sidebar-collapsed{ grid-template-columns: 0px 1fr; }
@@ -368,6 +369,7 @@ body{
   display: flex; flex-direction: column;
   min-width: 0; height: 100vh;
   height: 100dvh;
+  height: var(--vh100, 100dvh);
 }
 
 .topbar{
@@ -1385,6 +1387,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 </div>
 
 <script>
+/* ============================================================
+   VIEWPORT HEIGHT FIX — mobile browsers lie about 100vh (it
+   ignores the address bar / on-screen keyboard). 100dvh fixes
+   this on browsers that support it, but as a more bulletproof
+   fallback that works everywhere, this also computes the real
+   visible height in JS and exposes it as --vh100, which .app
+   and .main both prefer over the CSS-only units. Kept updated
+   on resize/orientation-change/keyboard-open so the layout
+   never gets left sized to a viewport that no longer exists.
+============================================================ */
+(function viewportHeightFix(){
+  function setVh(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--vh100', h + 'px');
+  }
+  setVh();
+  window.addEventListener('resize', setVh);
+  window.addEventListener('orientationchange', () => setTimeout(setVh, 50));
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', setVh);
+    window.visualViewport.addEventListener('scroll', setVh);
+  }
+})();
+
 /* ============================================================
    OPSEC GATE — best-effort client-side VPN/proxy detection.
    Runs TWO independent IP-intelligence lookups in parallel
