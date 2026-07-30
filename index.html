@@ -549,6 +549,7 @@ select#sidebarModel:focus{ border-color: var(--phosphor-dim); }
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: 0; transition: opacity .3s;
   animation: liquid-border 6s linear infinite;
+  pointer-events: none; /* was silently eating clicks meant for the textarea underneath */
 }
 .composer.focused::before{ opacity: 1; }
 @keyframes liquid-border{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
@@ -744,6 +745,71 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 .attach-chip.image-chip img{ width: 26px; height: 26px; border-radius: 5px; object-fit: cover; display:block; }
 
 /* ============================================================
+   SYSTEM PROMPT PANEL — slide-in drawer from the right
+============================================================ */
+.prompt-scrim{
+  position: fixed; inset: 0; z-index: 55;
+  background: rgba(3,5,4,0.6); backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .35s var(--ease);
+}
+.prompt-scrim.open{ opacity: 1; pointer-events: all; }
+.prompt-panel{
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 56;
+  width: min(400px, 92vw);
+  background: linear-gradient(180deg, rgba(14,20,17,0.94), rgba(8,12,10,0.97));
+  border-left: 1px solid var(--hair-strong);
+  backdrop-filter: blur(20px);
+  box-shadow: -20px 0 60px -20px rgba(0,0,0,0.7);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .38s var(--ease);
+}
+.prompt-panel.open{ transform: translateX(0); }
+.prompt-panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 18px 18px 14px; border-bottom: 1px solid var(--hair);
+}
+.prompt-panel-title{
+  font-family: var(--font-display); font-size: 13px; color: var(--text-hi);
+  font-weight: 700; letter-spacing: .6px;
+}
+.prompt-panel-body{ padding: 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
+.prompt-panel-body select{
+  width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--hair-strong);
+  color: var(--text); font-family: var(--font-mono); font-size: 12px; padding: 9px 10px;
+  border-radius: var(--r-sm); outline: none; cursor: pointer; appearance: none;
+  transition: border-color .2s;
+}
+.prompt-panel-body select:focus{ border-color: var(--phosphor-dim); }
+#systemPromptInput{
+  flex: 1; min-height: 260px; margin-top: 8px; resize: vertical;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm); padding: 12px 13px; color: var(--text-hi);
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+#systemPromptInput:focus{ border-color: var(--phosphor-dim); box-shadow: 0 0 0 3px rgba(61,255,160,0.08); }
+.prompt-panel-hint{
+  margin-top: 12px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); line-height: 1.6;
+}
+
+/* ============================================================
+   ANIMATION UTILITIES — reused across dynamically-inserted UI
+============================================================ */
+@keyframes pop-in{
+  from{ opacity: 0; transform: translateY(6px) scale(.98); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
+}
+.pop-in{ animation: pop-in .3s var(--ease) both; }
+@keyframes pop-out{
+  from{ opacity: 1; transform: scale(1); max-height: 60px; }
+  to{ opacity: 0; transform: scale(.9); max-height: 0; margin: 0; padding: 0; border-width: 0; }
+}
+.pop-out{ animation: pop-out .22s var(--ease) both; overflow: hidden; }
+.chat-inner{ transition: opacity .22s ease; }
+
+/* ============================================================
    OPSEC GATE — perimeter check overlay, shown before the app
 ============================================================ */
 #opsecGate{
@@ -807,28 +873,6 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
 }
 .gate-override:hover{ color: var(--text-mute); }
-.gate-caveat{
-  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair);
-  font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); line-height: 1.6;
-}
-.gate-egg{
-  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hair);
-}
-.gate-egg summary{
-  cursor: pointer; list-style: none; font-family: var(--font-mono); font-size: 10px;
-  color: var(--amber); letter-spacing: .5px; user-select: none;
-}
-.gate-egg summary::-webkit-details-marker{ display: none; }
-.gate-egg summary:hover{ color: #ffcb80; }
-.gate-egg p{
-  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); line-height: 1.75;
-  margin: 10px 0 0;
-}
-.gate-egg p strong{ color: var(--phosphor); font-weight: 600; }
-.gate-egg-punchline{
-  color: var(--text-hi) !important; margin-top: 8px !important;
-  padding-top: 8px; border-top: 1px dashed var(--hair);
-}
 #app{ transition: opacity .4s var(--ease); }
 #app.app-locked{ opacity: 0; pointer-events: none; }
 
@@ -907,9 +951,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   <div class="gate-panel">
     <div class="gate-head">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>
-      <h2>PERIMETER CHECK</h2>
+      <h2>OPSEC LEVEL CHECK</h2>
     </div>
-    <div class="gate-sub">MAINFRAME/OPSEC · verifying egress path before granting console access</div>
+    <div class="gate-sub">MAINFRAME/OPSEC</div>
 
     <div class="gate-log" id="gateLog"></div>
 
@@ -922,32 +966,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     <div class="gate-actions" id="gateActions" style="display:none;">
       <button class="gate-retry" id="gateRetry">Re-run Scan</button>
       <button class="gate-override" id="gateOverride">Proceed without VPN →</button>
-    </div>
-
-    <details class="gate-egg">
-      <summary>▸ RECOMMENDED OPSEC POSTURE (click to expand)</summary>
-      <p>
-        Look, a VPN alone barely counts anymore. Bare minimum, real operators are running
-        <strong>VLESS + REALITY + XTLS-Vision + uTLS fingerprint spoofing</strong> tunneled over
-        <strong>WireGuard</strong>, chained through <strong>Tor</strong>, inside
-        <strong>Whonix</strong>, running as a compartment in <strong>Qubes OS</strong>, with
-        <strong>DNS-over-HTTPS + DNSSEC</strong> pointed at <strong>Mullvad</strong>,
-        <strong>Encrypted SNI / ECH</strong> on a hardened <strong>Firefox + Arkenfox</strong>
-        build running <strong>uBlock Origin</strong> and <strong>NoScript</strong>,
-        <strong>HTTPS-Only Mode</strong> enforced, and full <strong>MAC address randomization</strong>
-        — because just booting <strong>Tails</strong> in a <strong>Kali</strong> VM off a
-        <strong>Flipper Zero</strong> isn't enough anymore, bro.
-      </p>
-      <p class="gate-egg-punchline">In reality: this gate just needs a VPN. That's it. Relax.</p>
-    </details>
-
-    <div class="gate-caveat">
-      This runs four independent checks against your resolved egress IP — a dedicated VPN/proxy/Tor
-      database, an ASN/CDN keyword cross-check, a match against a known VPN-netblock CIDR list, and
-      a system-clock-vs-IP-timezone comparison — and passes on any single hit. Still a best-effort
-      heuristic, not a cryptographic guarantee. Privacy extensions sometimes block the lookup calls
-      themselves; if everything fails, the override below lets you through instead of hard-locking
-      you out.
     </div>
   </div>
 </div>
@@ -1019,6 +1037,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     </div>
   </div>
 
+  <!-- ============ SYSTEM PROMPT PANEL ============ -->
+  <div class="prompt-scrim" id="promptScrim"></div>
+  <aside class="prompt-panel" id="promptPanel">
+    <div class="prompt-panel-head">
+      <div class="prompt-panel-title">SYSTEM PROMPT</div>
+      <button class="icon-btn" id="promptPanelClose" aria-label="Close system prompt panel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="prompt-panel-body">
+      <div class="field-label">Preset</div>
+      <select id="systemPresetSelect"></select>
+      <div class="field-label" style="margin-top:16px;">Prompt (editable)</div>
+      <textarea id="systemPromptInput" placeholder="System prompt sent as the first message on every request..."></textarea>
+      <div class="prompt-panel-hint">Presets are hardcoded starting points — pick one, then edit freely. Applies to every session and is saved locally.</div>
+    </div>
+  </aside>
+
   <!-- ============ MAIN ============ -->
   <main class="main">
     <div class="topbar">
@@ -1039,6 +1075,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
           <div class="ctx-bar"><div class="ctx-bar-fill" id="ctxFill"></div></div>
         </div>
       </div>
+      <button class="icon-btn" id="systemPromptToggle" title="System prompt" aria-label="Open system prompt panel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V7a2 2 0 012-2h8l6 6v6a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 5v6h6"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      </button>
     </div>
 
     <div class="chat-scroll" id="chatScroll">
@@ -1324,7 +1363,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     statusEl.className = 'gate-status show pass';
     statusTitle.textContent = '◢◤ ACCESS GRANTED ◢◤';
     glitchText(statusTitle, '◢◤ ACCESS GRANTED ◢◤');
-    statusBody.textContent = 'Anonymized egress confirmed. Decrypting console shell…';
+    statusBody.textContent = 'OPSEC LEVEL: ANONYMOUS — decrypting console shell…';
     renderDetail(results);
     actionsEl.style.display = 'none';
     setTimeout(() => {
@@ -1432,7 +1471,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    STATE
 ============================================================ */
 const OR_BASE = 'https://openrouter.ai/api/v1';
-const KEY_STORAGE = 'mainframeopsec_or_key';
+const KEY_COOKIE = 'mainframeopsec_or_key';
+const SESSIONS_STORAGE = 'mainframeopsec_sessions';
+const SETTINGS_STORAGE = 'mainframeopsec_settings';
+
+// --- cookie helpers (API key lives here — small, persists across
+//     restarts). Chat history is far too large for a ~4KB cookie,
+//     so that goes in localStorage instead; see saveSessions().
+function setCookie(name, value, days){
+  const expires = new Date(Date.now() + days*24*60*60*1000).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+function getCookie(name){
+  const match = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : '';
+}
+function deleteCookie(name){
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+}
 
 const CURATED_MODEL_IDS = [
   'deepseek/deepseek-v3.1-terminus',
@@ -1443,12 +1499,38 @@ const CURATED_MODEL_IDS = [
   'moonshotai/kimi-k2-0905',
 ];
 
+// Hardcoded, editable system-prompt presets. Picking one overwrites
+// the textarea; further edits are free-form and persist regardless
+// of which preset (if any) was last selected.
+const SYSTEM_PRESETS = {
+  mainframe: {
+    label: 'MainframeOpSec Default',
+    prompt: 'You are MAINFRAME-AI, a terse, technically precise operations assistant. Prefer concrete commands, configs, and code over vague advice. Flag security and opsec implications when relevant, but do not roleplay or refuse legitimate technical requests.',
+  },
+  concise: {
+    label: 'Concise Assistant',
+    prompt: 'Answer as briefly as possible. Use bullet points over prose. Skip preamble and caveats unless safety-relevant. No filler sentences.',
+  },
+  security: {
+    label: 'Senior Security Engineer',
+    prompt: 'You are a senior security engineer. Think in terms of threat models, attack surface, and blast radius. When reviewing configs or code, call out concrete vulnerabilities with severity and a fix, not generic warnings.',
+  },
+  reviewer: {
+    label: 'Code Reviewer',
+    prompt: 'You are a strict but fair code reviewer. Point out bugs, edge cases, and readability issues directly. Suggest concrete diffs where possible. Do not praise code that has real problems.',
+  },
+  writer: {
+    label: 'Creative Writer',
+    prompt: 'You are a skilled creative writing collaborator. Favor vivid, specific prose over generic description. Match the tone and voice the user establishes rather than defaulting to a neutral register.',
+  },
+};
+
 const state = {
   sidebarOpen: window.innerWidth > 900,
   reasoningMode: false,
   fastMode: true,
   webSearch: false,
-  apiKey: localStorage.getItem(KEY_STORAGE) || '',
+  apiKey: getCookie(KEY_COOKIE),
   keyInfo: null,          // { label, limit_remaining, usage, ... } from GET /key
   models: new Map(),      // id -> { id, name, context_length }
   selectedModelId: '',
@@ -1458,6 +1540,7 @@ const state = {
   ctxMax: 0,
   modalMode: null,        // 'apikey' | 'newsession' | 'addmodel'
   inFlight: false,
+  systemPrompt: '',
 };
 
 const el = {
@@ -1501,7 +1584,51 @@ const el = {
   modalCancel: document.getElementById('modalCancel'),
   modalSecondary: document.getElementById('modalSecondary'),
   modalConfirm: document.getElementById('modalConfirm'),
+  systemPromptToggle: document.getElementById('systemPromptToggle'),
+  promptScrim: document.getElementById('promptScrim'),
+  promptPanel: document.getElementById('promptPanel'),
+  promptPanelClose: document.getElementById('promptPanelClose'),
+  systemPresetSelect: document.getElementById('systemPresetSelect'),
+  systemPromptInput: document.getElementById('systemPromptInput'),
 };
+
+/* ============================================================
+   PERSISTENCE — sessions/settings in localStorage (cookies are
+   too small for chat history), API key in a cookie (see above).
+============================================================ */
+function saveSessions(){
+  try {
+    localStorage.setItem(SESSIONS_STORAGE, JSON.stringify({
+      sessions: state.sessions, activeSessionId: state.activeSessionId,
+    }));
+  } catch (e) { /* storage full or unavailable — non-fatal */ }
+}
+function loadSessions(){
+  try {
+    const raw = localStorage.getItem(SESSIONS_STORAGE);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.sessions)) state.sessions = data.sessions;
+    if (data.activeSessionId) state.activeSessionId = data.activeSessionId;
+  } catch (e) { /* corrupt or unavailable — start fresh */ }
+}
+function saveSettings(){
+  try {
+    localStorage.setItem(SETTINGS_STORAGE, JSON.stringify({
+      selectedModelId: state.selectedModelId,
+      reasoningMode: state.reasoningMode,
+      fastMode: state.fastMode,
+      webSearch: state.webSearch,
+      systemPrompt: state.systemPrompt,
+    }));
+  } catch (e) { /* non-fatal */ }
+}
+function loadSettings(){
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1628,7 +1755,7 @@ async function connectApiKey(key){
     const data = await res.json();
     state.apiKey = key;
     state.keyInfo = data.data || null;
-    localStorage.setItem(KEY_STORAGE, key);
+    setCookie(KEY_COOKIE, key, 365);
     renderConnection();
     await fetchModels();
     return true;
@@ -1641,7 +1768,7 @@ async function connectApiKey(key){
 function clearApiKey(){
   state.apiKey = '';
   state.keyInfo = null;
-  localStorage.removeItem(KEY_STORAGE);
+  deleteCookie(KEY_COOKIE);
   renderConnection();
   el.sidebarModel.innerHTML = '<option value="">Add API key to load models…</option>';
   state.models.clear();
@@ -1732,6 +1859,7 @@ function selectModel(id){
   el.ctxFill.style.width = '0%';
   const s = currentSession();
   if (s) el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
+  saveSettings();
 }
 
 el.sidebarModel.addEventListener('change', () => {
@@ -1748,6 +1876,7 @@ function bindToggle(node, key){
     state[key] = !state[key];
     node.classList.toggle('on', state[key]);
     node.setAttribute('aria-checked', String(state[key]));
+    saveSettings();
   };
   node.addEventListener('click', activate);
   node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
@@ -1785,6 +1914,7 @@ function createSession(name){
   state.sessions.unshift(session);
   setActiveSession(id);
   renderSessionList();
+  saveSessions();
 }
 function currentSession(){ return state.sessions.find(s => s.id === state.activeSessionId); }
 function ensureSession(){ if (!state.activeSessionId) createSession(null); }
@@ -1796,6 +1926,7 @@ function setActiveSession(id){
   renderSessionList();
   renderMessages();
   if (window.innerWidth <= 900) closeSidebarOverlay();
+  saveSessions();
 }
 
 function renderSessionList(filter=''){
@@ -1803,6 +1934,7 @@ function renderSessionList(filter=''){
   const filtered = state.sessions.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()));
   if (filtered.length === 0){
     const empty = document.createElement('div');
+    empty.className = 'pop-in';
     empty.style.cssText = 'padding:14px 10px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);';
     empty.textContent = state.sessions.length === 0 ? 'No sessions yet — start one above.' : 'No matches.';
     el.sessionList.appendChild(empty);
@@ -1810,7 +1942,7 @@ function renderSessionList(filter=''){
   }
   filtered.forEach(s => {
     const item = document.createElement('div');
-    item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
+    item.className = 'session-item pop-in' + (s.id === state.activeSessionId ? ' active' : '');
     item.tabIndex = 0;
     item.innerHTML = `
       <div class="session-dot"></div>
@@ -1828,6 +1960,52 @@ function renderSessionList(filter=''){
 }
 el.sessionSearch.addEventListener('input', e => renderSessionList(e.target.value));
 el.newSessionBtn.addEventListener('click', () => openModal('newsession'));
+
+/* ============================================================
+   SYSTEM PROMPT PANEL — slide-in drawer with hardcoded,
+   user-editable presets. Applies to every session.
+============================================================ */
+Object.keys(SYSTEM_PRESETS).forEach(key => {
+  const opt = document.createElement('option');
+  opt.value = key;
+  opt.textContent = SYSTEM_PRESETS[key].label;
+  el.systemPresetSelect.appendChild(opt);
+});
+(() => {
+  const custom = document.createElement('option');
+  custom.value = '';
+  custom.textContent = '— Custom —';
+  el.systemPresetSelect.insertBefore(custom, el.systemPresetSelect.firstChild);
+  el.systemPresetSelect.value = '';
+})();
+
+function openPromptPanel(){
+  el.promptPanel.classList.add('open');
+  el.promptScrim.classList.add('open');
+  setTimeout(() => el.systemPromptInput.focus(), 250);
+}
+function closePromptPanel(){
+  el.promptPanel.classList.remove('open');
+  el.promptScrim.classList.remove('open');
+}
+el.systemPromptToggle.addEventListener('click', openPromptPanel);
+el.promptPanelClose.addEventListener('click', closePromptPanel);
+el.promptScrim.addEventListener('click', closePromptPanel);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && el.promptPanel.classList.contains('open')) closePromptPanel();
+});
+el.systemPresetSelect.addEventListener('change', () => {
+  const key = el.systemPresetSelect.value;
+  if (key && SYSTEM_PRESETS[key]){
+    state.systemPrompt = SYSTEM_PRESETS[key].prompt;
+    el.systemPromptInput.value = state.systemPrompt;
+    saveSettings();
+  }
+});
+el.systemPromptInput.addEventListener('input', () => {
+  state.systemPrompt = el.systemPromptInput.value;
+  saveSettings();
+});
 
 /* ============================================================
    ATTACHMENTS — real file reads (text inlined, images as
@@ -1865,7 +2043,13 @@ function renderAttachments(){
       chip.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
         <span>${escapeHtml(att.name)}</span><button aria-label="remove">&times;</button>`;
     }
-    chip.querySelector('button').addEventListener('click', () => { state.attachments.splice(i,1); renderAttachments(); });
+    chip.querySelector('button').addEventListener('click', () => {
+      chip.classList.add('pop-out');
+      chip.addEventListener('animationend', () => {
+        state.attachments.splice(i,1);
+        renderAttachments();
+      }, { once: true });
+    });
     el.attachRow.appendChild(chip);
   });
 }
@@ -1974,14 +2158,18 @@ document.addEventListener('click', e => {
    MESSAGE RENDERING
 ============================================================ */
 function renderMessages(){
-  el.chatInner.innerHTML = '';
-  const s = currentSession();
-  if (!s || s.messages.length === 0){
-    el.chatInner.appendChild(el.emptyState);
-    return;
-  }
-  s.messages.forEach(m => el.chatInner.appendChild(buildMessageNode(m)));
-  scrollToBottom();
+  el.chatInner.style.opacity = '0';
+  setTimeout(() => {
+    el.chatInner.innerHTML = '';
+    const s = currentSession();
+    if (!s || s.messages.length === 0){
+      el.chatInner.appendChild(el.emptyState);
+    } else {
+      s.messages.forEach(m => el.chatInner.appendChild(buildMessageNode(m)));
+    }
+    el.chatInner.style.opacity = '1';
+    scrollToBottom();
+  }, 120);
 }
 function buildMessageNode(m){
   const wrap = document.createElement('div');
@@ -2062,6 +2250,7 @@ function trySend(){
   el.chatInner.appendChild(buildMessageNode(userMsg));
   scrollToBottom();
   renderSessionList();
+  saveSessions();
 
   el.messageInput.value = '';
   el.messageInput.style.height = 'auto';
@@ -2098,6 +2287,9 @@ async function streamCompletion(session){
     stream: true,
     usage: { include: true },
   };
+  if (state.systemPrompt && state.systemPrompt.trim()){
+    body.messages.unshift({ role: 'system', content: state.systemPrompt.trim() });
+  }
   if (state.reasoningMode) body.reasoning = { enabled: true, effort: 'medium' };
   if (state.fastMode) body.provider = { sort: 'throughput' };
   if (state.webSearch) body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
@@ -2233,6 +2425,7 @@ async function streamCompletion(session){
   el.toolLive.classList.remove('active');
   el.toolLive.innerHTML = '<span class="pip"></span> Idle';
   renderSessionList();
+  saveSessions();
   scrollToBottom();
 }
 
@@ -2284,13 +2477,50 @@ async function streamCompletion(session){
 /* ============================================================
    INIT
 ============================================================ */
+loadSessions();
+
+const savedSettings = loadSettings();
+if (savedSettings){
+  state.reasoningMode = !!savedSettings.reasoningMode;
+  state.fastMode = savedSettings.fastMode !== false;
+  state.webSearch = !!savedSettings.webSearch;
+  state.systemPrompt = savedSettings.systemPrompt || '';
+  el.reasoningToggle.classList.toggle('on', state.reasoningMode);
+  el.reasoningToggle.setAttribute('aria-checked', String(state.reasoningMode));
+  el.fastToggle.classList.toggle('on', state.fastMode);
+  el.fastToggle.setAttribute('aria-checked', String(state.fastMode));
+  el.webSearchToggle.classList.toggle('on', state.webSearch);
+  el.webSearchToggle.setAttribute('aria-checked', String(state.webSearch));
+  el.systemPromptInput.value = state.systemPrompt;
+}
+
 renderSessionList();
+if (state.activeSessionId && currentSession()) renderMessages();
 updateSidebarClass();
 renderConnection();
 if (state.apiKey){
   fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${state.apiKey}` } })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(data => { state.keyInfo = data.data || null; renderConnection(); return fetchModels(); })
+    .then(data => {
+      state.keyInfo = data.data || null;
+      renderConnection();
+      return fetchModels();
+    })
+    .then(() => {
+      const wanted = savedSettings && savedSettings.selectedModelId;
+      if (wanted && state.models.has(wanted)){
+        el.sidebarModel.value = wanted;
+        if (![...el.sidebarModel.options].some(o => o.value === wanted)){
+          const opt = document.createElement('option');
+          opt.value = wanted;
+          const m = state.models.get(wanted);
+          opt.textContent = `${m.name} — ${formatCtx(m.context_length)}`;
+          el.sidebarModel.insertBefore(opt, el.sidebarModel.querySelector('.add-model-option'));
+          el.sidebarModel.value = wanted;
+        }
+        selectModel(wanted);
+      }
+    })
     .catch(() => { state.keyInfo = null; renderConnection(); });
 }
 </script>
