@@ -242,6 +242,25 @@ body{
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .session-item.active .session-title{ color: var(--phosphor); }
+.session-item.archived{ opacity: .55; }
+.session-item.archived .session-title{ text-decoration: line-through; text-decoration-color: var(--text-dim); }
+.session-actions{
+  display: flex; align-items: center; gap: 3px; opacity: 0;
+  transition: opacity .15s; flex-shrink: 0; margin-top: 2px;
+}
+.session-item:hover .session-actions, .session-item:focus-within .session-actions{ opacity: 1; }
+.session-action-btn{
+  width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: var(--text-dim); cursor: pointer; transition: all .15s;
+}
+.session-action-btn:hover{ color: var(--text-hi); background: rgba(255,255,255,0.06); }
+.session-action-btn.danger:hover{ color: var(--danger); background: rgba(255,92,92,0.1); }
+.archived-toggle{
+  padding: 8px 10px; margin-top: 4px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: .3px;
+  cursor: pointer; transition: color .15s;
+}
+.archived-toggle:hover{ color: var(--text-mute); }
 .session-sub{
   margin-top:3px; display:flex; align-items:center; gap:6px;
   font-family: var(--font-mono); font-size: 9.5px; color: var(--text-mute);
@@ -630,6 +649,16 @@ body{
 .toggle-text{ display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .toggle-label{ font-family: var(--font-mono); font-size: 11px; color: var(--text-hi); }
 .toggle-desc{ font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); }
+.toggle-numeric{
+  display:flex; align-items:center; justify-content: space-between; gap:10px;
+  padding: 8px 8px;
+}
+.toggle-num-input{
+  width: 68px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair-strong);
+  border-radius: 6px; color: var(--text-hi); font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 6px; text-align: right; outline: none;
+}
+.toggle-num-input:focus{ border-color: var(--phosphor-dim); }
 .switch{
   width: 26px; height: 15px; border-radius: 10px; background: rgba(255,255,255,0.08);
   position: relative; transition: background .2s var(--ease);
@@ -887,49 +916,24 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 .gate-head{ display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
 .gate-head svg{ color: var(--phosphor); flex-shrink:0; }
 .gate-head h2{ margin:0; font-family: var(--font-display); font-size: 15px; color: var(--text-hi); letter-spacing: .5px; }
-.gate-sub{ font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); margin: 0 0 18px; letter-spacing: .5px; }
-.gate-log{
-  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.9; color: var(--text-mute);
-  min-height: 96px; margin-bottom: 16px;
+.gate-sub{ font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); margin: 0 0 22px; letter-spacing: .5px; }
+
+.gate-progress-track{
+  height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden;
 }
-.gate-log-line{ display:flex; align-items:center; gap: 8px; opacity: 0; animation: msg-in .35s var(--ease) forwards; }
-.gate-log-line .gl-icon{ width: 12px; flex-shrink:0; text-align:center; }
-.gate-log-line.ok .gl-icon{ color: var(--phosphor); }
-.gate-log-line.pending .gl-icon{ color: var(--text-dim); }
-.gate-log-line.fail .gl-icon{ color: var(--danger); }
-.gate-status{
-  border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 14px;
-  font-family: var(--font-mono); border: 1px solid var(--hair-strong);
-  display: none;
+.gate-progress-fill{
+  height: 100%; width: 0%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--phosphor-dim), var(--phosphor));
+  transition: width .4s var(--ease), background .3s;
 }
-.gate-status.show{ display: block; animation: msg-in .4s var(--ease) both; }
-.gate-status.pass{ background: rgba(61,255,160,0.07); border-color: rgba(61,255,160,0.3); }
-.gate-status.fail{ background: rgba(255,92,92,0.07); border-color: rgba(255,92,92,0.3); }
-.gate-status-title{ font-size: 13px; font-weight: 700; letter-spacing: .5px; margin-bottom: 6px; }
-.gate-status.pass .gate-status-title{ color: var(--phosphor); }
-.gate-status.fail .gate-status-title{ color: var(--danger); }
-.gate-status-body{ font-size: 11px; color: var(--text-mute); line-height: 1.6; }
-.gate-detail{
-  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--hair);
-  display: flex; flex-direction: column; gap: 3px;
+.gate-progress-fill.fail{ background: linear-gradient(90deg, #a83a3a, var(--danger)); }
+.gate-status-line{
+  margin-top: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-mute);
+  letter-spacing: .3px; min-height: 16px;
 }
-.gate-detail-ip{
-  font-family: var(--font-mono); font-size: 10px; color: var(--text-mute);
-  margin-bottom: 4px; letter-spacing: .3px;
-}
-.gdr{
-  display: flex; align-items: center; gap: 8px; padding: 2px 0;
-  font-family: var(--font-mono); font-size: 10.5px; cursor: help;
-}
-.gdr-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
-.gdr.hit .gdr-dot{ background: var(--phosphor); box-shadow: 0 0 6px var(--phosphor-glow); }
-.gdr-label{
-  flex: 1; color: var(--text-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.gdr.hit .gdr-label{ color: var(--text-hi); }
-.gdr-tag{ font-size: 9px; letter-spacing: .4px; color: var(--text-dim); flex-shrink: 0; }
-.gdr.hit .gdr-tag{ color: var(--phosphor); font-weight: 600; }
-.gate-actions{ display:flex; align-items:center; justify-content:center; gap: 10px; margin-top: 4px; }
+.gate-status-line.pass{ color: var(--phosphor); font-weight: 600; }
+.gate-status-line.fail{ color: var(--danger); font-weight: 600; }
+.gate-actions{ display:flex; align-items:center; justify-content:center; gap: 10px; margin-top: 16px; }
 .gate-retry{
   font-family: var(--font-mono); font-size: 11.5px; padding: 9px 16px; border-radius: var(--r-sm);
   background: linear-gradient(150deg, var(--phosphor), #1fae6e); color: #06120c; border: none; font-weight: 600;
@@ -995,6 +999,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 @media (hover: none){
   /* touch devices: skip magnetic drift, rely on tap feedback */
   .magnetic{ transition: transform .12s var(--ease); }
+  .session-actions{ opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -1018,13 +1023,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     </div>
     <div class="gate-sub">MAINFRAME/OPSEC</div>
 
-    <div class="gate-log" id="gateLog"></div>
-
-    <div class="gate-status" id="gateStatus">
-      <div class="gate-status-title" id="gateStatusTitle"></div>
-      <div class="gate-status-body" id="gateStatusBody"></div>
-      <div class="gate-detail" id="gateDetail"></div>
-    </div>
+    <div class="gate-progress-track"><div class="gate-progress-fill" id="gateProgressFill"></div></div>
+    <div class="gate-status-line" id="gateStatusLine">Initializing…</div>
 
     <div class="gate-actions" id="gateActions" style="display:none;">
       <button class="gate-retry" id="gateRetry">Re-run Scan</button>
@@ -1049,12 +1049,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     </div>
 
     <button class="new-session" id="newSessionBtn">
-      <span class="plus">+</span> New chat
+      <span class="plus">+</span> New session
     </button>
 
     <div class="session-search">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="sessionSearch" placeholder="Search chats" autocomplete="off">
+      <input type="text" id="sessionSearch" placeholder="Filter session logs" autocomplete="off">
     </div>
 
     <div class="session-list" id="sessionList"></div>
@@ -1072,7 +1072,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
         </div>
         <div>
           <div class="operator-name" id="connectionTitle">No API Key</div>
-          <div class="operator-clearance" id="connectionSub">Click to connect OpenRouter</div>
+          <div class="operator-clearance" id="connectionSub">Auth required — click to bind key</div>
         </div>
       </div>
     </div>
@@ -1096,6 +1096,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <div class="modal-hint">Don't have a key? <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get one at openrouter.ai/keys</a></div>
     </div>
   </div>
+
+  <!-- ============ PAYLOAD VIEWER ============ -->
+  <div class="prompt-scrim" id="payloadScrim"></div>
+  <aside class="prompt-panel" id="payloadPanel">
+    <div class="prompt-panel-head">
+      <div class="prompt-panel-title">REQUEST PAYLOAD</div>
+      <button class="icon-btn" id="payloadPanelClose" aria-label="Close payload viewer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="prompt-panel-body">
+      <div class="prompt-panel-hint" style="margin-top:0;">POST /chat/completions — exact JSON body from the most recent request. Empty until the first message is sent.</div>
+      <div class="codeblock" style="margin-top:10px;">
+        <div class="codeblock-head">
+          <span>application/json</span>
+          <button class="copy-btn" id="payloadCopyBtn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            copy
+          </button>
+        </div>
+        <pre id="payloadContent" style="max-height:60vh;">// no request sent yet</pre>
+      </div>
+    </div>
+  </aside>
 
   <!-- ============ SYSTEM PROMPT PANEL ============ -->
   <div class="prompt-scrim" id="promptScrim"></div>
@@ -1135,6 +1159,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
           <div class="ctx-bar"><div class="ctx-bar-fill" id="ctxFill"></div></div>
         </div>
       </div>
+      <button class="icon-btn" id="payloadToggle" title="View payload" aria-label="View request payload">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </button>
       <button class="icon-btn" id="systemPromptToggle" title="System prompt" aria-label="Open system prompt panel">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V7a2 2 0 012-2h8l6 6v6a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 5v6h6"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
       </button>
@@ -1174,7 +1201,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <div class="composer" id="composer">
 
         <div class="composer-toprow">
-          <div class="chip model-chip" id="modelChip"><span class="dot"></span> <span id="modelChipLabel">No model selected</span></div>
+          <div class="chip model-chip" id="modelChip"><span class="dot"></span> <span id="modelChipLabel">No model bound</span></div>
           <div class="cdd options-popover" id="optionsPopover">
             <button type="button" class="cdd-trigger options-trigger" id="optionsTrigger" title="Request options" aria-haspopup="true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
@@ -1193,6 +1220,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
               <div class="toggle blue" id="webSearchToggle" tabindex="0" role="switch" aria-checked="false">
                 <div class="toggle-text"><span class="toggle-label">Web search</span><span class="toggle-desc">Let the model search the web</span></div>
                 <span class="switch"></span>
+              </div>
+              <div class="cdd-divider"></div>
+              <div class="toggle-numeric">
+                <div class="toggle-text"><span class="toggle-label">max_tokens</span><span class="toggle-desc">Output cap sent per request</span></div>
+                <input type="number" id="maxTokensInput" class="toggle-num-input" min="256" max="65536" step="256" value="4096">
               </div>
             </div>
           </div>
@@ -1238,11 +1270,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 ============================================================ */
 (function opsecGate(){
   const gateEl = document.getElementById('opsecGate');
-  const logEl = document.getElementById('gateLog');
-  const statusEl = document.getElementById('gateStatus');
-  const statusTitle = document.getElementById('gateStatusTitle');
-  const statusBody = document.getElementById('gateStatusBody');
-  const detailEl = document.getElementById('gateDetail');
+  const progressFill = document.getElementById('gateProgressFill');
+  const statusLine = document.getElementById('gateStatusLine');
   const actionsEl = document.getElementById('gateActions');
   const retryBtn = document.getElementById('gateRetry');
   // Local on purpose — this IIFE must never depend on anything declared
@@ -1278,13 +1307,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     'network solutions','server ',' isp inc','isp llc'
   ];
 
-  function logLine(text, kind){
-    const row = document.createElement('div');
-    row.className = 'gate-log-line ' + kind;
-    const icon = kind === 'ok' ? '✓' : kind === 'fail' ? '✗' : '›';
-    row.innerHTML = `<span class="gl-icon">${icon}</span><span>${text}</span>`;
-    logEl.appendChild(row);
-    return row;
+  function setProgress(pct, text){
+    progressFill.style.width = pct + '%';
+    if (text) statusLine.textContent = text;
   }
 
   async function fetchWithTimeout(url, ms){
@@ -1401,30 +1426,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     if (!m) return null;
     const ipOffsetMin = (m[1] === '-' ? -1 : 1) * (parseInt(m[2],10)*60 + parseInt(m[3],10));
     const browserOffsetMin = -new Date().getTimezoneOffset();
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
     const diff = Math.abs(ipOffsetMin - browserOffsetMin);
-    const fmt = min => (min>=0?'+':'-') + String(Math.floor(Math.abs(min)/60)).padStart(2,'0') + ':' + String(Math.abs(min)%60).padStart(2,'0');
     return {
       source: 'System clock vs IP-geolocated timezone', label: 'Timezone match',
       ip: ipData.ip,
-      org: `browser: ${browserTz} (UTC${fmt(browserOffsetMin)})`,
-      country: `IP timezone: ${ipData.timezoneName || '—'} (UTC${fmt(ipOffsetMin)})`,
       flags: { diff_minutes: diff },
       isVpn: diff >= 90,
     };
-  }
-
-  function renderDetail(results){
-    if (!results || !results.length){ detailEl.innerHTML = ''; return; }
-    const ip = results.find(r => r.ip && r.ip !== '—')?.ip || '—';
-    const rows = results.map(r => `
-      <div class="gdr${r.isVpn ? ' hit' : ''}" title="${escapeHtml(r.org && r.org !== '—' ? r.org : r.source)}">
-        <span class="gdr-dot"></span>
-        <span class="gdr-label">${escapeHtml(r.label || r.source)}</span>
-        <span class="gdr-tag">${r.isVpn ? 'HIT' : 'clean'}</span>
-      </div>
-    `).join('');
-    detailEl.innerHTML = `<div class="gate-detail-ip">egress ${escapeHtml(ip)}</div>${rows}`;
   }
 
   function glitchText(node, finalText){
@@ -1440,12 +1448,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     }, 22);
   }
 
-  function pass(results){
-    statusEl.className = 'gate-status show pass';
-    statusTitle.textContent = '◢◤ ACCESS GRANTED ◢◤';
-    glitchText(statusTitle, '◢◤ ACCESS GRANTED ◢◤');
-    statusBody.textContent = 'OPSEC LEVEL: ANONYMOUS — decrypting console shell…';
-    renderDetail(results);
+  function pass(){
+    setProgress(100);
+    progressFill.classList.remove('fail');
+    statusLine.className = 'gate-status-line pass';
+    glitchText(statusLine, 'ACCESS GRANTED — OPSEC LEVEL: ANONYMOUS');
     actionsEl.style.display = 'none';
     setTimeout(() => {
       gateEl.classList.add('gate-hidden');
@@ -1454,51 +1461,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     }, 750);
   }
 
-  function fail(results, errored){
-    statusEl.className = 'gate-status show fail';
-    const title = errored ? 'CHECK FAILED — UNKNOWN EXPOSURE' : 'ACCESS DENIED — OPSEC LEVEL: PENETRABLE';
-    statusTitle.textContent = title;
-    glitchText(statusTitle, title);
-    statusBody.textContent = errored
-      ? "All lookups were unreachable — blocked by a privacy extension, offline, or rate-limited. Your VPN status could not be confirmed either way."
-      : 'No VPN/proxy database hit, no ASN/CDN keyword match, and your system clock matches your IP\'s timezone. Looks like bare residential traffic. Light up a tunnel and re-run the scan.';
-    if (results && results.length) renderDetail(results);
-    else detailEl.innerHTML = '';
+  function fail(errored){
+    progressFill.classList.add('fail');
+    statusLine.className = 'gate-status-line fail';
+    const msg = errored
+      ? 'CHECK FAILED — network blocked or offline'
+      : 'ACCESS DENIED — OPSEC LEVEL: PENETRABLE';
+    glitchText(statusLine, msg);
     actionsEl.style.display = 'flex';
   }
 
   async function runCheck(){
-    statusEl.className = 'gate-status';
+    progressFill.classList.remove('fail');
+    statusLine.className = 'gate-status-line';
     actionsEl.style.display = 'none';
-    logEl.innerHTML = '';
+    setProgress(0, 'Resolving egress IP…');
 
-    const l0 = logLine('Tracing egress route…', 'pending');
     let ip;
     try {
       ip = await resolveOwnIp();
-      l0.className = 'gate-log-line ok';
-      logLine(`Egress IP pinned: ${ip}`, 'ok');
     } catch (e0) {
-      l0.className = 'gate-log-line fail';
-      logLine('Could not resolve egress IP — network blocked or offline.', 'fail');
-      fail(null, true);
+      fail(true);
       return;
     }
-
-    const l1 = logLine('Querying VPN exit-node database…', 'pending');
-    const l2 = logLine('Cross-referencing ASN / CDN / hosting registries…', 'pending');
-    const l3 = logLine('Matching against known VPN netblock ranges…', 'pending');
-    await new Promise(r => setTimeout(r, 200));
+    setProgress(25, 'Querying VPN / proxy databases…');
 
     const settled = await Promise.allSettled([checkDedicated(ip), checkKeyword(ip), checkCidrList(ip)]);
     const results = [];
     let keywordData = null;
-    if (settled[0].status === 'fulfilled'){ l1.className = 'gate-log-line ok'; results.push(settled[0].value); }
-    else { l1.className = 'gate-log-line fail'; l1.querySelector('span:last-child').textContent = 'VPN exit-node database unreachable.'; }
-    if (settled[1].status === 'fulfilled'){ l2.className = 'gate-log-line ok'; keywordData = settled[1].value; results.push(keywordData); }
-    else { l2.className = 'gate-log-line fail'; l2.querySelector('span:last-child').textContent = 'ASN registry cross-check unreachable.'; }
-    if (settled[2].status === 'fulfilled'){ l3.className = 'gate-log-line ok'; results.push(settled[2].value); }
-    else { l3.className = 'gate-log-line fail'; l3.querySelector('span:last-child').textContent = 'VPN netblock list unreachable.'; }
+    if (settled[0].status === 'fulfilled') results.push(settled[0].value);
+    if (settled[1].status === 'fulfilled'){ keywordData = settled[1].value; results.push(keywordData); }
+    if (settled[2].status === 'fulfilled') results.push(settled[2].value);
+    setProgress(60, 'Cross-referencing ASN attribution…');
 
     // Cross-source org-attribution mismatch: two independent WHOIS
     // databases disagreeing on who owns the same IP is unusual for
@@ -1509,32 +1503,25 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       const orgB = (settled[1].value.org || '').toLowerCase();
       const related = orgA === '—' || orgB === '—' || orgA.includes(orgB) || orgB.includes(orgA);
       if (!related){
-        logLine('ASN attribution conflict between sources — anomalous.', 'ok');
-        results.push({
-          source: 'Cross-source ASN attribution check', label: 'ASN attribution',
-          ip, org: `"${settled[0].value.org}" vs "${settled[1].value.org}"`, country: '—',
-          flags: { conflict: true }, isVpn: true,
-        });
+        results.push({ source: 'Cross-source ASN attribution check', label: 'ASN attribution', ip, flags: { conflict: true }, isVpn: true });
       }
     }
+    setProgress(80, 'Comparing system clock to IP timezone…');
 
     // Timezone vs IP-geolocation mismatch — independent of both
     // databases above, catches gaps in VPN-provider coverage.
     if (keywordData){
       const tzResult = checkTimezoneMismatch(keywordData);
-      if (tzResult){
-        logLine(tzResult.isVpn ? 'System clock does not match IP timezone — anomalous.' : 'System clock matches IP timezone.', 'ok');
-        results.push(tzResult);
-      }
+      if (tzResult) results.push(tzResult);
     }
 
+    setProgress(95, 'Evaluating opsec posture…');
     await new Promise(r => setTimeout(r, 200));
     const anyHit = results.some(r => r.isVpn);
-    logLine('Evaluating opsec posture…', anyHit ? 'ok' : (results.length ? 'fail' : 'fail'));
 
-    if (results.length === 0) fail(null, true);
-    else if (anyHit) pass(results);
-    else fail(results, false);
+    if (results.length === 0) fail(true);
+    else if (anyHit) pass();
+    else fail(false);
   }
 
   retryBtn.addEventListener('click', runCheck);
@@ -1612,12 +1599,15 @@ const state = {
   selectedModelId: '',
   sessions: [],           // { id, title, messages: [{role, content}], createdAt }
   activeSessionId: null,
+  showArchived: false,
   attachments: [],        // { name, kind: 'text'|'image', content|dataUrl }
   ctxMax: 0,
   modalMode: null,        // 'apikey' | 'newsession' | 'addmodel'
   inFlight: false,
   abortController: null,
   systemPrompt: '',
+  maxTokens: 4096,
+  lastPayload: null,
 };
 
 const el = {
@@ -1636,6 +1626,7 @@ const el = {
   reasoningToggle: document.getElementById('reasoningToggle'),
   fastToggle: document.getElementById('fastToggle'),
   webSearchToggle: document.getElementById('webSearchToggle'),
+  maxTokensInput: document.getElementById('maxTokensInput'),
   optionsPopover: document.getElementById('optionsPopover'),
   optionsTrigger: document.getElementById('optionsTrigger'),
   optionsMenu: document.getElementById('optionsMenu'),
@@ -1666,6 +1657,12 @@ const el = {
   modalSecondary: document.getElementById('modalSecondary'),
   modalConfirm: document.getElementById('modalConfirm'),
   systemPromptToggle: document.getElementById('systemPromptToggle'),
+  payloadToggle: document.getElementById('payloadToggle'),
+  payloadScrim: document.getElementById('payloadScrim'),
+  payloadPanel: document.getElementById('payloadPanel'),
+  payloadPanelClose: document.getElementById('payloadPanelClose'),
+  payloadContent: document.getElementById('payloadContent'),
+  payloadCopyBtn: document.getElementById('payloadCopyBtn'),
   promptScrim: document.getElementById('promptScrim'),
   promptPanel: document.getElementById('promptPanel'),
   promptPanelClose: document.getElementById('promptPanelClose'),
@@ -1701,6 +1698,7 @@ function saveSettings(){
       fastMode: state.fastMode,
       webSearch: state.webSearch,
       systemPrompt: state.systemPrompt,
+      maxTokens: state.maxTokens,
     }));
   } catch (e) { /* non-fatal */ }
 }
@@ -1811,7 +1809,7 @@ function renderConnection(){
     el.connectionAvatar.className = 'operator-avatar';
     el.connectionTitle.textContent = 'No API Key';
     el.connectionSub.className = 'operator-clearance';
-    el.connectionSub.textContent = 'Click to connect OpenRouter';
+    el.connectionSub.textContent = 'Auth required — click to bind key';
     return;
   }
   if (state.keyInfo){
@@ -1857,7 +1855,7 @@ function clearApiKey(){
   el.sidebarModel.innerHTML = '<option value="">Add API key to load models…</option>';
   state.models.clear();
   state.selectedModelId = '';
-  el.modelChipLabel.textContent = 'No model selected';
+  el.modelChipLabel.textContent = 'No model bound';
   state.ctxMax = 0;
   el.tokenMeter.textContent = '0 / —';
   el.ctxFill.style.width = '0%';
@@ -2038,6 +2036,13 @@ bindToggle(el.reasoningToggle, 'reasoningMode');
 bindToggle(el.fastToggle, 'fastMode');
 bindToggle(el.webSearchToggle, 'webSearch');
 
+el.maxTokensInput.addEventListener('change', () => {
+  const n = parseInt(el.maxTokensInput.value, 10);
+  state.maxTokens = (isNaN(n) || n < 1) ? 4096 : Math.min(65536, Math.max(1, n));
+  el.maxTokensInput.value = state.maxTokens;
+  saveSettings();
+});
+
 function updateOptionsBadge(){
   const count = [state.reasoningMode, state.webSearch].filter(Boolean).length;
   if (count > 0){
@@ -2108,10 +2113,67 @@ function setActiveSession(id){
   saveSessions();
 }
 
+function archiveSession(id){
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  s.tag = s.tag === 'archived' ? 'active' : 'archived';
+  if (s.tag === 'archived' && state.activeSessionId === id){
+    const next = state.sessions.find(x => x.tag !== 'archived' && x.id !== id);
+    if (next) setActiveSession(next.id);
+    else { state.activeSessionId = null; el.activeSessionTitle.textContent = 'No active session'; renderMessages(); }
+  }
+  renderSessionList();
+  saveSessions();
+}
+
+function deleteSession(id){
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`Delete "${s.title}"? This permanently removes ${s.messages.length} message${s.messages.length === 1 ? '' : 's'} and cannot be undone.`)) return;
+  state.sessions = state.sessions.filter(x => x.id !== id);
+  if (state.activeSessionId === id){
+    const next = state.sessions.find(x => x.tag !== 'archived');
+    if (next) setActiveSession(next.id);
+    else { state.activeSessionId = null; el.activeSessionTitle.textContent = 'No active session'; renderMessages(); }
+  }
+  renderSessionList();
+  saveSessions();
+}
+
 function renderSessionList(filter=''){
   el.sessionList.innerHTML = '';
-  const filtered = state.sessions.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()));
-  if (filtered.length === 0){
+  const matches = state.sessions.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()));
+  const active = matches.filter(s => s.tag !== 'archived');
+  const archived = matches.filter(s => s.tag === 'archived');
+
+  function renderItem(s, dim){
+    const item = document.createElement('div');
+    item.className = 'session-item pop-in' + (s.id === state.activeSessionId ? ' active' : '') + (dim ? ' archived' : '');
+    item.tabIndex = 0;
+    item.innerHTML = `
+      <div class="session-dot"></div>
+      <div class="session-meta">
+        <div class="session-title">${escapeHtml(s.title)}</div>
+        <div class="session-sub">${s.messages.length ? s.messages.length + ' message' + (s.messages.length === 1 ? '' : 's') : 'Empty'}</div>
+      </div>
+      <div class="session-actions">
+        <button class="session-action-btn" data-action="archive" title="${dim ? 'Unarchive' : 'Archive'}" aria-label="${dim ? 'Unarchive session' : 'Archive session'}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
+        </button>
+        <button class="session-action-btn danger" data-action="delete" title="Delete" aria-label="Delete session">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      </div>`;
+    item.addEventListener('click', e => {
+      if (e.target.closest('.session-action-btn')) return;
+      setActiveSession(s.id);
+    });
+    item.querySelector('[data-action="archive"]').addEventListener('click', e => { e.stopPropagation(); archiveSession(s.id); });
+    item.querySelector('[data-action="delete"]').addEventListener('click', e => { e.stopPropagation(); deleteSession(s.id); });
+    el.sessionList.appendChild(item);
+  }
+
+  if (active.length === 0 && archived.length === 0){
     const empty = document.createElement('div');
     empty.className = 'pop-in';
     empty.style.cssText = 'padding:14px 10px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);';
@@ -2119,19 +2181,16 @@ function renderSessionList(filter=''){
     el.sessionList.appendChild(empty);
     return;
   }
-  filtered.forEach(s => {
-    const item = document.createElement('div');
-    item.className = 'session-item pop-in' + (s.id === state.activeSessionId ? ' active' : '');
-    item.tabIndex = 0;
-    item.innerHTML = `
-      <div class="session-dot"></div>
-      <div class="session-meta">
-        <div class="session-title">${escapeHtml(s.title)}</div>
-        <div class="session-sub">${s.messages.length ? s.messages.length + ' message' + (s.messages.length === 1 ? '' : 's') : 'Empty'}</div>
-      </div>`;
-    item.addEventListener('click', () => setActiveSession(s.id));
-    el.sessionList.appendChild(item);
-  });
+  active.forEach(s => renderItem(s, false));
+
+  if (archived.length){
+    const toggle = document.createElement('div');
+    toggle.className = 'archived-toggle';
+    toggle.textContent = (state.showArchived ? '▾' : '▸') + ` Archived (${archived.length})`;
+    toggle.addEventListener('click', () => { state.showArchived = !state.showArchived; renderSessionList(el.sessionSearch.value); });
+    el.sessionList.appendChild(toggle);
+    if (state.showArchived) archived.forEach(s => renderItem(s, true));
+  }
 }
 el.sessionSearch.addEventListener('input', e => renderSessionList(e.target.value));
 el.newSessionBtn.addEventListener('click', () => openModal('newsession'));
@@ -2170,6 +2229,29 @@ el.promptPanelClose.addEventListener('click', closePromptPanel);
 el.promptScrim.addEventListener('click', closePromptPanel);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && el.promptPanel.classList.contains('open')) closePromptPanel();
+  if (e.key === 'Escape' && el.payloadPanel.classList.contains('open')) closePayloadPanel();
+});
+
+function openPayloadPanel(){
+  el.payloadContent.textContent = state.lastPayload
+    ? JSON.stringify(state.lastPayload, null, 2)
+    : '// no request sent yet';
+  el.payloadPanel.classList.add('open');
+  el.payloadScrim.classList.add('open');
+}
+function closePayloadPanel(){
+  el.payloadPanel.classList.remove('open');
+  el.payloadScrim.classList.remove('open');
+}
+el.payloadToggle.addEventListener('click', openPayloadPanel);
+el.payloadPanelClose.addEventListener('click', closePayloadPanel);
+el.payloadScrim.addEventListener('click', closePayloadPanel);
+el.payloadCopyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(el.payloadContent.textContent).then(() => {
+    const original = el.payloadCopyBtn.innerHTML;
+    el.payloadCopyBtn.innerHTML = 'copied ✓';
+    setTimeout(() => { el.payloadCopyBtn.innerHTML = original; }, 1400);
+  });
 });
 el.systemPresetSelect.addEventListener('change', () => {
   const key = el.systemPresetSelect.value;
@@ -2411,7 +2493,7 @@ function trySend(){
   if (!text || state.inFlight) return;
 
   if (!state.apiKey){ openModal('apikey'); return; }
-  if (!state.selectedModelId){ ensureSession(); systemBubble('Pick a model from the sidebar before sending.'); return; }
+  if (!state.selectedModelId){ ensureSession(); systemBubble('No model bound to this session — select one from the sidebar before transmitting.'); return; }
 
   ensureSession();
   const s = currentSession();
@@ -2479,6 +2561,7 @@ async function streamCompletion(session){
     messages: buildApiMessages(session.messages),
     stream: true,
     usage: { include: true },
+    max_tokens: state.maxTokens,
   };
   if (state.systemPrompt && state.systemPrompt.trim()){
     body.messages.unshift({ role: 'system', content: state.systemPrompt.trim() });
@@ -2486,6 +2569,7 @@ async function streamCompletion(session){
   if (state.reasoningMode) body.reasoning = { enabled: true, effort: 'medium' };
   if (state.fastMode) body.provider = { sort: 'throughput' };
   if (state.webSearch) body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
+  state.lastPayload = body;
 
   let contentText = '';
   let reasoningText = '';
@@ -2705,6 +2789,8 @@ if (savedSettings){
   state.fastMode = savedSettings.fastMode !== false;
   state.webSearch = !!savedSettings.webSearch;
   state.systemPrompt = savedSettings.systemPrompt || '';
+  state.maxTokens = savedSettings.maxTokens || 4096;
+  el.maxTokensInput.value = state.maxTokens;
   el.reasoningToggle.classList.toggle('on', state.reasoningMode);
   el.reasoningToggle.setAttribute('aria-checked', String(state.reasoningMode));
   el.fastToggle.classList.toggle('on', state.fastMode);
