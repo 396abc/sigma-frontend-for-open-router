@@ -2036,9 +2036,8 @@ function selectModel(id){
   el.modelChipLabel.textContent = label;
   el.topbarSub.textContent = label;
   state.ctxMax = m ? (m.context_length || 0) : 0;
-  el.tokenMeter.textContent = `0 / ${formatCtx(state.ctxMax)}`;
-  el.ctxFill.style.width = '0%';
   const s = currentSession();
+  updateContextMeterForSession(s);
   if (s) el.activeSessionTitle.textContent = s.title;
   saveSettings();
   applyAutoPersonality();
@@ -2269,12 +2268,36 @@ function createSession(name){
 function currentSession(){ return state.sessions.find(s => s.id === state.activeSessionId); }
 function ensureSession(){ if (!state.activeSessionId) createSession(null); }
 
+// Cheap by design: walks backward from the end of a session's message
+// list (usually just 1-2 steps) to find the last usage object the API
+// already returned, rather than re-summing or re-estimating anything.
+// prompt_tokens on that message already reflects the full history sent
+// through that point, since the whole conversation is resent every turn.
+function updateContextMeterForSession(session){
+  let lastUsage = null;
+  if (session && session.messages){
+    for (let i = session.messages.length - 1; i >= 0; i--){
+      const u = session.messages[i].usage;
+      if (u && u.prompt_tokens != null){ lastUsage = u; break; }
+    }
+  }
+  if (lastUsage){
+    const total = (lastUsage.prompt_tokens || 0) + (lastUsage.completion_tokens || 0);
+    el.tokenMeter.textContent = `${formatCtx(total)} / ${formatCtx(state.ctxMax)}`;
+    el.ctxFill.style.width = state.ctxMax ? Math.min(100, (lastUsage.prompt_tokens||0) / state.ctxMax * 100).toFixed(1) + '%' : '0%';
+  } else {
+    el.tokenMeter.textContent = `0 / ${formatCtx(state.ctxMax)}`;
+    el.ctxFill.style.width = '0%';
+  }
+}
+
 function setActiveSession(id){
   state.activeSessionId = id;
   const s = state.sessions.find(x => x.id === id);
   el.activeSessionTitle.textContent = s.title;
   renderSessionList();
   renderMessages();
+  updateContextMeterForSession(s);
   if (window.innerWidth <= 900) closeSidebarOverlay();
   saveSessions();
 }
@@ -2701,6 +2724,7 @@ function saveEditMessage(hash, newText){
     // drop everything after it and regenerate, same as ChatGPT/Claude.
     s.messages = s.messages.slice(0, idx + 1);
     renderMessages();
+    updateContextMeterForSession(s);
     saveSessions();
     streamCompletion(s);
   } else {
@@ -2717,6 +2741,7 @@ function deleteMessage(hash){
   s.messages = s.messages.filter(x => x.hash !== hash);
   renderMessages();
   renderSessionList();
+  updateContextMeterForSession(s);
   saveSessions();
 }
 function isNearBottom(){
@@ -3106,6 +3131,7 @@ if (savedSettings){
 
 renderSessionList();
 if (state.activeSessionId && currentSession()) renderMessages();
+updateContextMeterForSession(currentSession());
 updateSidebarClass();
 renderConnection();
 if (state.apiKey){
