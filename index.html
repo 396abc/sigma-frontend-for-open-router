@@ -823,6 +823,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 #opsecGate.gate-hidden{ opacity: 0; pointer-events: none; }
 .gate-panel{
   width: 100%; max-width: 480px;
+  max-height: 88vh; overflow-y: auto;
   border: 1px solid var(--hair-strong);
   border-radius: var(--r-lg);
   background: linear-gradient(180deg, rgba(14,20,17,0.75), rgba(8,12,10,0.9));
@@ -857,10 +858,24 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 .gate-status-body{ font-size: 11px; color: var(--text-mute); line-height: 1.6; }
 .gate-detail{
   margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--hair);
-  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
-  font-size: 10px; color: var(--text-dim);
+  display: flex; flex-direction: column; gap: 3px;
 }
-.gate-detail b{ color: var(--text-mute); font-weight: 500; }
+.gate-detail-ip{
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-mute);
+  margin-bottom: 4px; letter-spacing: .3px;
+}
+.gdr{
+  display: flex; align-items: center; gap: 8px; padding: 2px 0;
+  font-family: var(--font-mono); font-size: 10.5px; cursor: help;
+}
+.gdr-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.gdr.hit .gdr-dot{ background: var(--phosphor); box-shadow: 0 0 6px var(--phosphor-glow); }
+.gdr-label{
+  flex: 1; color: var(--text-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gdr.hit .gdr-label{ color: var(--text-hi); }
+.gdr-tag{ font-size: 9px; letter-spacing: .4px; color: var(--text-dim); flex-shrink: 0; }
+.gdr.hit .gdr-tag{ color: var(--phosphor); font-weight: 600; }
 .gate-actions{ display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-top: 4px; }
 .gate-retry{
   font-family: var(--font-mono); font-size: 11.5px; padding: 9px 16px; border-radius: var(--r-sm);
@@ -1257,7 +1272,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     const ipInt = ipToInt(ip);
     const hit = ipInt !== null && list.some(e => ipInCidr(ipInt, e.base, e.bits));
     return {
-      source: `X4BNet VPN range DB (${list.length.toLocaleString()} CIDRs)`,
+      source: `X4BNet VPN range DB (${list.length.toLocaleString()} CIDRs)`, label: 'VPN CIDR list',
       ip, org: hit ? 'matched known VPN netblock' : '—', country: '—',
       flags: { cidr_match: hit }, isVpn: hit,
     };
@@ -1282,7 +1297,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     const d = await res.json();
     const flags = { vpn: !!d.is_vpn, proxy: !!d.is_proxy, datacenter: !!d.is_datacenter, tor: !!d.is_tor };
     return {
-      source: 'api.ipapi.is (VPN exit-node DB)',
+      source: 'api.ipapi.is (VPN exit-node DB)', label: 'VPN/proxy DB',
       ip: d.ip || ip,
       org: (d.company && d.company.name) || (d.asn && (d.asn.org || d.asn.name)) || '—',
       country: (d.location && d.location.country) || (d.datacenter && d.datacenter.country) || '—',
@@ -1298,7 +1313,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     const org = (d.org || '').toLowerCase();
     const hit = VPN_HOST_KEYWORDS.find(k => org.includes(k));
     return {
-      source: 'ipapi.co (ASN keyword cross-check)',
+      source: 'ipapi.co (ASN keyword cross-check)', label: 'ASN/CDN keywords',
       ip: d.ip || ip,
       org: d.org || '—',
       country: d.country_name || '—',
@@ -1328,7 +1343,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     const diff = Math.abs(ipOffsetMin - browserOffsetMin);
     const fmt = min => (min>=0?'+':'-') + String(Math.floor(Math.abs(min)/60)).padStart(2,'0') + ':' + String(Math.abs(min)%60).padStart(2,'0');
     return {
-      source: 'System clock vs IP-geolocated timezone',
+      source: 'System clock vs IP-geolocated timezone', label: 'Timezone match',
       ip: ipData.ip,
       org: `browser: ${browserTz} (UTC${fmt(browserOffsetMin)})`,
       country: `IP timezone: ${ipData.timezoneName || '—'} (UTC${fmt(ipOffsetMin)})`,
@@ -1338,12 +1353,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   }
 
   function renderDetail(results){
-    detailEl.innerHTML = results.map(r => `
-      <div><b>IP</b></div><div>${r.ip}</div>
-      <div><b>Org / ASN</b></div><div>${r.org}</div>
-      <div><b>Country</b></div><div>${r.country}</div>
-      <div><b>Source</b></div><div>${r.source} — ${r.isVpn ? '<span style="color:var(--phosphor)">HIT</span>' : 'clean'}</div>
-    `).join('<div style="grid-column:1/-1;height:1px;background:var(--hair);margin:4px 0;"></div>');
+    if (!results || !results.length){ detailEl.innerHTML = ''; return; }
+    const ip = results.find(r => r.ip && r.ip !== '—')?.ip || '—';
+    const rows = results.map(r => `
+      <div class="gdr${r.isVpn ? ' hit' : ''}" title="${escapeHtml(r.org && r.org !== '—' ? r.org : r.source)}">
+        <span class="gdr-dot"></span>
+        <span class="gdr-label">${escapeHtml(r.label || r.source)}</span>
+        <span class="gdr-tag">${r.isVpn ? 'HIT' : 'clean'}</span>
+      </div>
+    `).join('');
+    detailEl.innerHTML = `<div class="gate-detail-ip">egress ${escapeHtml(ip)}</div>${rows}`;
   }
 
   function glitchText(node, finalText){
@@ -1430,7 +1449,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       if (!related){
         logLine('ASN attribution conflict between sources — anomalous.', 'ok');
         results.push({
-          source: 'Cross-source ASN attribution check',
+          source: 'Cross-source ASN attribution check', label: 'ASN attribution',
           ip, org: `"${settled[0].value.org}" vs "${settled[1].value.org}"`, country: '—',
           flags: { conflict: true }, isVpn: true,
         });
@@ -2174,7 +2193,7 @@ function renderMessages(){
 function buildMessageNode(m){
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + m.role;
-  const roleLabel = m.role === 'user' ? 'OPERATOR' : m.role === 'system' ? 'SYSTEM' : 'MAINFRAME-AI';
+  const roleLabel = m.role === 'user' ? 'OPPERATOR' : m.role === 'system' ? 'SYSTEM' : 'MAINFRAME-AI';
   const avatarLabel = m.role === 'user' ? 'OP' : m.role === 'system' ? '!' : 'AI';
   let citationsHtml = '';
   if (m.citations && m.citations.length){
@@ -2217,6 +2236,8 @@ function systemBubble(text){
   if (el.emptyState.parentElement) el.emptyState.remove();
   el.chatInner.appendChild(buildMessageNode(msg));
   scrollToBottom();
+  renderSessionList();
+  saveSessions();
 }
 
 function trySend(){
