@@ -325,6 +325,7 @@ body{
 .cdd.open .cdd-menu{ opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
 .cdd-menu.dropup{ top: auto; bottom: calc(100% + 6px); transform: translateY(4px) scale(.98); }
 .cdd.open .cdd-menu.dropup{ transform: translateY(0) scale(1); }
+.cdd-menu.dropleft{ left: auto; right: 0; }
 .cdd-option{
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 9px; border-radius: 6px; cursor: pointer;
@@ -465,14 +466,17 @@ body{
 }
 .msg-body{ min-width: 0; flex: 1; }
 .msg-head{
-  display:flex; align-items:baseline; gap:8px; margin-bottom: 5px;
+  display:flex; align-items:baseline; gap:8px; margin-bottom: 5px; min-width: 0;
 }
-.msg-role{ font-family: var(--font-mono); font-size: 11px; font-weight:600; letter-spacing: .4px; color: var(--text-hi); }
+.msg-role{
+  font-family: var(--font-mono); font-size: 11px; font-weight:600; letter-spacing: .4px; color: var(--text-hi);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex-shrink: 1;
+}
 .msg.user .msg-role{ color: var(--amber); }
 .msg.ai .msg-role{ color: var(--phosphor); }
-.msg-time{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); }
+.msg-time{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); flex-shrink: 0; }
 .msg-actions{
-  display:flex; align-items:center; gap: 2px; margin-left: auto; opacity: 0;
+  display:flex; align-items:center; gap: 2px; margin-left: auto; opacity: 0; flex-shrink: 0;
   transition: opacity .15s;
 }
 .msg:hover .msg-actions, .msg:focus-within .msg-actions{ opacity: 1; }
@@ -681,7 +685,7 @@ body{
   background: var(--phosphor-dim); color: #06120c; font-size: 9px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.options-menu{ left: 0; right: auto; width: 220px; }
+.options-menu{ left: 0; right: auto; width: min(220px, calc(100vw - 40px)); }
 
 .toggle{
   display:flex; align-items:center; justify-content: space-between; gap:10px; cursor:pointer;
@@ -1024,6 +1028,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   .icon-btn{ width: 38px; height: 38px; }
 
   .chat-scroll{ padding: 18px 12px 240px; }
+  .scroll-bottom-btn{ bottom: 230px; }
   .empty-state{ margin-top: 4vh; }
   .empty-state h2{ font-size: 17px; }
   .suggestion-grid{ grid-template-columns: 1fr; }
@@ -1050,6 +1055,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   .composer-toprow .toggle .toggle-label{ display:none; } /* icon-only toggles on very small phones */
   .toggle{ padding: 6px; }
   .foot-hint{ display:none; }
+  .msg-time{ display:none; }
 }
 
 @media (hover: none){
@@ -2092,6 +2098,20 @@ function positionDropdownMenu(trigger, menu){
     menu.classList.add('dropup');
   } else {
     menu.classList.remove('dropup');
+  }
+
+  // Horizontal: if anchoring to the trigger's left edge would run the
+  // menu off the right side of the viewport, anchor to its right edge
+  // instead (extends leftward). Checked against the trigger's own
+  // container width so fixed-width menus (like the Options popover)
+  // never end up partially off-screen on narrow phones.
+  const menuWidth = menu.offsetWidth || 220;
+  const overflowsRight = rect.left + menuWidth > window.innerWidth - 8;
+  const fitsAnchoredRight = rect.right - menuWidth > 8;
+  if (overflowsRight && fitsAnchoredRight){
+    menu.classList.add('dropleft');
+  } else {
+    menu.classList.remove('dropleft');
   }
 }
 
