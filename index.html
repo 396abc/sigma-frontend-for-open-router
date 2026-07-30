@@ -2842,10 +2842,7 @@ function buildMessageNode(m){
       <div class="bubble">${m.html || ''}${citationsHtml}${usageHtml}</div>
     </div>`;
   if (editable && m.hash){
-    const editBtn = wrap.querySelector('[data-action="edit"]');
-    const deleteBtn = wrap.querySelector('[data-action="delete"]');
-    if (editBtn) editBtn.addEventListener('click', () => startEditMessage(wrap, m));
-    if (deleteBtn) deleteBtn.addEventListener('click', () => deleteMessage(m.hash));
+    wireMessageActions(wrap, m);
   }
   return wrap;
 }
