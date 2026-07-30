@@ -323,6 +323,8 @@ body{
   transition: opacity .16s var(--ease), transform .16s var(--ease);
 }
 .cdd.open .cdd-menu{ opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+.cdd-menu.dropup{ top: auto; bottom: calc(100% + 6px); transform: translateY(4px) scale(.98); }
+.cdd.open .cdd-menu.dropup{ transform: translateY(0) scale(1); }
 .cdd-option{
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 9px; border-radius: 6px; cursor: pointer;
@@ -410,7 +412,7 @@ body{
 ============================================================ */
 .chat-scroll{
   flex: 1; overflow-y: auto;
-  padding: 30px 20px 160px;
+  padding: 30px 20px 210px;
   scroll-behavior: smooth;
 }
 .chat-inner{ max-width: 760px; margin: 0 auto; display:flex; flex-direction:column; gap: 22px; }
@@ -580,7 +582,7 @@ body{
    COMPOSER — floating glass console
 ============================================================ */
 .scroll-bottom-btn{
-  position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%) translateY(8px) scale(.9);
+  position: absolute; left: 50%; bottom: 180px; transform: translateX(-50%) translateY(8px) scale(.9);
   width: 34px; height: 34px; border-radius: 50%; z-index: 5;
   display: flex; align-items: center; justify-content: center;
   background: rgba(14,20,17,0.9); border: 1px solid var(--hair-strong); color: var(--text-hi);
@@ -668,9 +670,17 @@ body{
 .toggle-num-input{
   width: 68px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair-strong);
   border-radius: 6px; color: var(--text-hi); font-family: var(--font-mono); font-size: 11px;
-  padding: 4px 6px; text-align: right; outline: none;
+  padding: 4px 6px; text-align: right; outline: none; flex-shrink: 0;
 }
 .toggle-num-input:focus{ border-color: var(--phosphor-dim); }
+.toggle:not(.on) .toggle-num-input{ opacity: .45; }
+.toggle-text-input{
+  width: 110px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair-strong);
+  border-radius: 6px; color: var(--text-hi); font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 7px; text-align: right; outline: none;
+}
+.toggle-text-input:focus{ border-color: var(--phosphor-dim); }
+.toggle-text-input:disabled{ opacity: .4; cursor: not-allowed; }
 .switch{
   width: 26px; height: 15px; border-radius: 10px; background: rgba(255,255,255,0.08);
   position: relative; transition: background .2s var(--ease);
@@ -884,9 +894,14 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   transition: border-color .2s, box-shadow .2s;
 }
 #systemPromptInput:focus{ border-color: var(--phosphor-dim); box-shadow: 0 0 0 3px rgba(61,255,160,0.08); }
+#systemPromptInput.locked{
+  opacity: .55; cursor: not-allowed; background: rgba(255,255,255,0.015);
+}
+.cdd.locked .cdd-trigger{ opacity: .55; cursor: not-allowed; }
 .prompt-panel-hint{
   margin-top: 12px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); line-height: 1.6;
 }
+.prompt-panel-hint.locked-note{ color: var(--amber); }
 
 /* ============================================================
    ANIMATION UTILITIES — reused across dynamically-inserted UI
@@ -978,7 +993,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 
   .icon-btn{ width: 38px; height: 38px; }
 
-  .chat-scroll{ padding: 18px 12px 190px; }
+  .chat-scroll{ padding: 18px 12px 240px; }
   .empty-state{ margin-top: 4vh; }
   .empty-state h2{ font-size: 17px; }
   .suggestion-grid{ grid-template-columns: 1fr; }
@@ -1147,7 +1162,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <select id="systemPresetSelect"></select>
       <div class="field-label" style="margin-top:16px;">Prompt (editable)</div>
       <textarea id="systemPromptInput" placeholder="System prompt sent as the first message on every request..."></textarea>
-      <div class="prompt-panel-hint">Presets are hardcoded starting points — pick one, then edit freely. Applies to every session and is saved locally.</div>
+      <div class="prompt-panel-hint" id="promptPanelHint">Presets are hardcoded starting points — pick one, then edit freely. Applies to every session and is saved locally.</div>
     </div>
   </aside>
 
@@ -1237,10 +1252,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
                 <div class="toggle-text"><span class="toggle-label">Web search</span><span class="toggle-desc">Let the model search the web</span></div>
                 <span class="switch"></span>
               </div>
+              <div class="toggle on" id="maxTokensToggle" tabindex="0" role="switch" aria-checked="true">
+                <div class="toggle-text"><span class="toggle-label">max_tokens</span><span class="toggle-desc">Cap output tokens per request</span></div>
+                <input type="number" id="maxTokensInput" class="toggle-num-input" min="1" max="65536" step="256" value="4096">
+                <span class="switch"></span>
+              </div>
+              <div class="cdd-divider"></div>
+              <div class="toggle" id="autoPersonalityToggle" tabindex="0" role="switch" aria-checked="false">
+                <div class="toggle-text"><span class="toggle-label">Auto-personality</span><span class="toggle-desc">System prompt follows the model</span></div>
+                <span class="switch"></span>
+              </div>
               <div class="cdd-divider"></div>
               <div class="toggle-numeric">
-                <div class="toggle-text"><span class="toggle-label">max_tokens</span><span class="toggle-desc">Output cap sent per request</span></div>
-                <input type="number" id="maxTokensInput" class="toggle-num-input" min="256" max="65536" step="256" value="4096">
+                <div class="toggle-text"><span class="toggle-label">Display name</span><span class="toggle-desc">Shown on your messages</span></div>
+                <input type="text" id="operatorNameInput" class="toggle-text-input" maxlength="24" value="OPPERATOR">
               </div>
             </div>
           </div>
@@ -1604,6 +1629,20 @@ const SYSTEM_PRESETS = {
   },
 };
 
+// Auto-personality: hardcoded model → preset mapping. Edit the values
+// (preset keys from SYSTEM_PRESETS above) to change which personality
+// each model gets when the Auto-personality toggle is on. Models not
+// listed fall back to AUTO_PERSONALITY_DEFAULT.
+const AUTO_PERSONALITY_MAP = {
+  'deepseek/deepseek-v3.1-terminus': 'mainframe',
+  'qwen/qwen3-235b-a22b-2507': 'concise',
+  'qwen/qwen3-235b-a22b-thinking-2507': 'security',
+  'inclusionai/ling-1t': 'reviewer',
+  'inclusionai/ring-1t': 'reviewer',
+  'moonshotai/kimi-k2-0905': 'writer',
+};
+const AUTO_PERSONALITY_DEFAULT = 'mainframe';
+
 const state = {
   sidebarOpen: window.innerWidth > 900,
   reasoningMode: false,
@@ -1624,6 +1663,9 @@ const state = {
   abortController: null,
   systemPrompt: '',
   maxTokens: 4096,
+  maxTokensEnabled: true,
+  operatorName: 'OPPERATOR',
+  autoPersonality: false,
   lastPayload: null,
 };
 
@@ -1645,6 +1687,9 @@ const el = {
   fastToggle: document.getElementById('fastToggle'),
   webSearchToggle: document.getElementById('webSearchToggle'),
   maxTokensInput: document.getElementById('maxTokensInput'),
+  maxTokensToggle: document.getElementById('maxTokensToggle'),
+  autoPersonalityToggle: document.getElementById('autoPersonalityToggle'),
+  operatorNameInput: document.getElementById('operatorNameInput'),
   optionsPopover: document.getElementById('optionsPopover'),
   optionsTrigger: document.getElementById('optionsTrigger'),
   optionsMenu: document.getElementById('optionsMenu'),
@@ -1686,6 +1731,7 @@ const el = {
   promptPanelClose: document.getElementById('promptPanelClose'),
   systemPresetSelect: document.getElementById('systemPresetSelect'),
   systemPromptInput: document.getElementById('systemPromptInput'),
+  promptPanelHint: document.getElementById('promptPanelHint'),
 };
 
 /* ============================================================
@@ -1717,6 +1763,9 @@ function saveSettings(){
       webSearch: state.webSearch,
       systemPrompt: state.systemPrompt,
       maxTokens: state.maxTokens,
+      maxTokensEnabled: state.maxTokensEnabled,
+      operatorName: state.operatorName,
+      autoPersonality: state.autoPersonality,
     }));
   } catch (e) { /* non-fatal */ }
 }
@@ -1950,6 +1999,11 @@ function addCustomModel(rawId){
   refreshDropdown(el.sidebarModel);
 }
 
+function currentModelLabel(){
+  const m = state.models.get(state.selectedModelId) || state.models.get(stripVariant(state.selectedModelId));
+  return m ? m.name : (state.selectedModelId || 'ASSISTANT');
+}
+
 function selectModel(id){
   state.selectedModelId = id;
   const m = state.models.get(id) || state.models.get(stripVariant(id));
@@ -1962,6 +2016,7 @@ function selectModel(id){
   const s = currentSession();
   if (s) el.activeSessionTitle.textContent = s.title;
   saveSettings();
+  applyAutoPersonality();
 }
 
 /* ============================================================
@@ -1970,6 +2025,21 @@ function selectModel(id){
    keeps working untouched; this only swaps the visual layer.
    Call refresh on a wrapped select whenever its <option>s change.
 ============================================================ */
+// Flips a menu to open upward instead of downward when there isn't enough
+// room below its trigger (e.g. anything anchored inside the composer,
+// which sits at the bottom of the viewport) — used by every dropdown.
+function positionDropdownMenu(trigger, menu){
+  const rect = trigger.getBoundingClientRect();
+  const menuHeight = menu.offsetHeight || 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  if (spaceBelow < menuHeight + 16 && spaceAbove > spaceBelow){
+    menu.classList.add('dropup');
+  } else {
+    menu.classList.remove('dropup');
+  }
+}
+
 function enhanceSelect(selectEl){
   const wrap = document.createElement('div');
   wrap.className = 'cdd';
@@ -2015,11 +2085,16 @@ function enhanceSelect(selectEl){
     label.textContent = selected ? selected.textContent : '';
   }
 
-  function open(){ wrap.classList.add('open'); document.addEventListener('click', onOutside); }
+  function open(){
+    positionDropdownMenu(trigger, menu);
+    wrap.classList.add('open');
+    document.addEventListener('click', onOutside);
+  }
   function close(){ wrap.classList.remove('open'); document.removeEventListener('click', onOutside); }
   function onOutside(e){ if (!wrap.contains(e.target)) close(); }
 
   trigger.addEventListener('click', () => {
+    if (selectEl.disabled) return;
     if (wrap.classList.contains('open')) close();
     else { build(); open(); }
   });
@@ -2039,13 +2114,14 @@ el.sidebarModel.addEventListener('change', () => {
 /* ============================================================
    TOGGLES — reasoning / fast mode / web search (all real params)
 ============================================================ */
-function bindToggle(node, key){
+function bindToggle(node, key, onChange){
   const activate = () => {
     state[key] = !state[key];
     node.classList.toggle('on', state[key]);
     node.setAttribute('aria-checked', String(state[key]));
     saveSettings();
     updateOptionsBadge();
+    if (onChange) onChange(state[key]);
   };
   node.addEventListener('click', activate);
   node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
@@ -2053,7 +2129,16 @@ function bindToggle(node, key){
 bindToggle(el.reasoningToggle, 'reasoningMode');
 bindToggle(el.fastToggle, 'fastMode');
 bindToggle(el.webSearchToggle, 'webSearch');
+bindToggle(el.maxTokensToggle, 'maxTokensEnabled');
+bindToggle(el.autoPersonalityToggle, 'autoPersonality', on => {
+  setPersonalityLock(on);
+  if (on) applyAutoPersonality();
+});
 
+// Inputs living inside a clickable toggle row must not toggle the row
+// when the user is just trying to edit the value.
+el.maxTokensInput.addEventListener('click', e => e.stopPropagation());
+el.maxTokensInput.addEventListener('mousedown', e => e.stopPropagation());
 el.maxTokensInput.addEventListener('change', () => {
   const n = parseInt(el.maxTokensInput.value, 10);
   state.maxTokens = (isNaN(n) || n < 1) ? 4096 : Math.min(65536, Math.max(1, n));
@@ -2061,8 +2146,45 @@ el.maxTokensInput.addEventListener('change', () => {
   saveSettings();
 });
 
+el.operatorNameInput.addEventListener('click', e => e.stopPropagation());
+el.operatorNameInput.addEventListener('mousedown', e => e.stopPropagation());
+el.operatorNameInput.addEventListener('change', () => {
+  const v = el.operatorNameInput.value.trim();
+  state.operatorName = v || 'OPPERATOR';
+  el.operatorNameInput.value = state.operatorName;
+  saveSettings();
+  renderMessages();
+});
+
+// Auto-personality locks the prompt editor — the whole point is that it's
+// derived from the model, not hand-edited while it's driving things.
+function setPersonalityLock(locked){
+  el.systemPromptInput.disabled = locked;
+  el.systemPromptInput.classList.toggle('locked', locked);
+  el.systemPresetSelect.disabled = locked;
+  const wrap = el.systemPresetSelect.closest('.cdd');
+  if (wrap) wrap.classList.toggle('locked', locked);
+  el.promptPanelHint.textContent = locked
+    ? 'Locked — Auto-personality is setting this from the model. Turn it off in Options to edit manually.'
+    : 'Presets are hardcoded starting points — pick one, then edit freely. Applies to every session and is saved locally.';
+  el.promptPanelHint.classList.toggle('locked-note', locked);
+}
+
+// Hardcoded model → preset mapping (see AUTO_PERSONALITY_MAP above).
+function applyAutoPersonality(){
+  if (!state.autoPersonality) return;
+  const key = AUTO_PERSONALITY_MAP[state.selectedModelId] || AUTO_PERSONALITY_DEFAULT;
+  const preset = SYSTEM_PRESETS[key];
+  if (!preset) return;
+  state.systemPrompt = preset.prompt;
+  el.systemPromptInput.value = preset.prompt;
+  el.systemPresetSelect.value = key;
+  refreshDropdown(el.systemPresetSelect);
+  saveSettings();
+}
+
 function updateOptionsBadge(){
-  const count = [state.reasoningMode, state.webSearch].filter(Boolean).length;
+  const count = [state.reasoningMode, state.webSearch, state.autoPersonality, !state.maxTokensEnabled].filter(Boolean).length;
   if (count > 0){
     el.optionsBadge.textContent = String(count);
     el.optionsBadge.style.display = 'flex';
@@ -2073,6 +2195,7 @@ function updateOptionsBadge(){
 updateOptionsBadge();
 
 function openOptionsPopover(){
+  positionDropdownMenu(el.optionsTrigger, el.optionsMenu);
   el.optionsPopover.classList.add('open');
   document.addEventListener('click', onOptionsOutside);
 }
@@ -2457,8 +2580,8 @@ function renderMessages(){
 function buildMessageNode(m){
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + m.role;
-  const roleLabel = m.role === 'user' ? 'OPPERATOR' : m.role === 'system' ? 'SYSTEM' : 'MAINFRAME-AI';
-  const avatarLabel = m.role === 'user' ? 'OP' : m.role === 'system' ? '!' : 'AI';
+  const roleLabel = m.role === 'user' ? state.operatorName : m.role === 'system' ? 'SYSTEM' : (m.modelLabel || 'ASSISTANT');
+  const avatarLabel = m.role === 'user' ? state.operatorName.slice(0,2).toUpperCase() : m.role === 'system' ? '!' : 'AI';
   let citationsHtml = '';
   if (m.citations && m.citations.length){
     citationsHtml = `<div class="citations">${m.citations.map(c => `<a class="citation-chip" href="${escapeHtml(c.url)}" target="_blank" rel="noopener" title="${escapeHtml(c.title||c.url)}">${escapeHtml(c.title || c.url)}</a>`).join('')}</div>`;
@@ -2580,7 +2703,7 @@ async function streamCompletion(session){
   typingNode.innerHTML = `
     <div class="msg-avatar">AI</div>
     <div class="msg-body">
-      <div class="msg-head"><span class="msg-role">MAINFRAME-AI</span><span class="msg-time">${nowTime()}</span></div>
+      <div class="msg-head"><span class="msg-role">${escapeHtml(currentModelLabel())}</span><span class="msg-time">${nowTime()}</span></div>
       <div class="bubble typing"><div class="typing-dots"><span></span><span></span><span></span></div></div>
     </div>`;
   el.chatInner.appendChild(typingNode);
@@ -2597,8 +2720,8 @@ async function streamCompletion(session){
     messages: buildApiMessages(session.messages),
     stream: true,
     usage: { include: true },
-    max_tokens: state.maxTokens,
   };
+  if (state.maxTokensEnabled) body.max_tokens = state.maxTokens;
   if (state.systemPrompt && state.systemPrompt.trim()){
     body.messages.unshift({ role: 'system', content: state.systemPrompt.trim() });
   }
@@ -2646,11 +2769,12 @@ async function streamCompletion(session){
     node = document.createElement('div');
     node.className = 'msg ai';
     hash = randomHash();
+    const modelLabel = currentModelLabel();
     node.innerHTML = `
       <div class="msg-avatar">AI</div>
       <div class="msg-body">
         <div class="msg-head">
-          <span class="msg-role">MAINFRAME-AI</span>
+          <span class="msg-role">${escapeHtml(modelLabel)}</span>
           <span class="msg-time">${nowTime()}</span>
         </div>
         <div class="reasoning" id="reason-${hash}" style="display:none;">
@@ -2727,7 +2851,7 @@ async function streamCompletion(session){
 
     session.messages.push({
       role: 'assistant', raw: contentText, apiContent: contentText, html: finalHtml,
-      time: nowTime(), hash, citations, usage,
+      time: nowTime(), hash, citations, usage, modelLabel,
       reasoningHtml: reasoningText ? node.querySelector('.reasoning').outerHTML : '',
     });
 
@@ -2744,7 +2868,7 @@ async function streamCompletion(session){
         node.querySelector('.bubble').innerHTML = finalHtml;
         session.messages.push({
           role: 'assistant', raw: contentText, apiContent: contentText, html: finalHtml,
-          time: nowTime(), hash: hash || randomHash(), citations, usage,
+          time: nowTime(), hash: hash || randomHash(), citations, usage, modelLabel: currentModelLabel(),
           reasoningHtml: reasoningText && node ? node.querySelector('.reasoning').outerHTML : '',
         });
       } else {
@@ -2834,6 +2958,19 @@ if (savedSettings){
   el.webSearchToggle.classList.toggle('on', state.webSearch);
   el.webSearchToggle.setAttribute('aria-checked', String(state.webSearch));
   el.systemPromptInput.value = state.systemPrompt;
+
+  state.maxTokensEnabled = savedSettings.maxTokensEnabled !== false;
+  el.maxTokensToggle.classList.toggle('on', state.maxTokensEnabled);
+  el.maxTokensToggle.setAttribute('aria-checked', String(state.maxTokensEnabled));
+
+  state.operatorName = savedSettings.operatorName || 'OPPERATOR';
+  el.operatorNameInput.value = state.operatorName;
+
+  state.autoPersonality = !!savedSettings.autoPersonality;
+  el.autoPersonalityToggle.classList.toggle('on', state.autoPersonality);
+  el.autoPersonalityToggle.setAttribute('aria-checked', String(state.autoPersonality));
+  setPersonalityLock(state.autoPersonality);
+
   updateOptionsBadge();
 }
 
