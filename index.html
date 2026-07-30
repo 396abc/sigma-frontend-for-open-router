@@ -1441,12 +1441,43 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    executes <script> tags, so we recreate the node manually).
    window.__MFOPSEC_UNLOCKED__ is the signal the bundle's own
    script checks before it does anything — see asset.html.
+
+   IMPORTANT: a synchronous error thrown *inside* a dynamically
+   inserted <script> does NOT propagate back through appendChild()
+   as a catchable exception — the browser just fires a global
+   'error' event instead. A plain try/catch around the injection
+   would silently miss that failure. So this also installs a
+   window-level error/rejection listener and renders whatever it
+   catches directly on screen, since there's no console to check.
 ============================================================ */
 const ASSET_BUNDLE_URL = 'https://raw.githubusercontent.com/396abc/sigma-frontend-for-open-router/refs/heads/main/dir/asset.html';
 
 function escapeLoaderHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+
+function showBootError(title, detail){
+  const root = document.getElementById('assetRoot');
+  root.innerHTML = `
+    <div class="boot-loading boot-error">
+      <div class="boot-text"><strong>${escapeLoaderHtml(title)}</strong><br>${escapeLoaderHtml(detail || '')}</div>
+      <button class="boot-retry" id="bootRetry">Retry</button>
+    </div>`;
+  document.getElementById('bootRetry').addEventListener('click', window.loadMainframeAssets);
+}
+
+// Catches errors from the injected bundle script too (see note above),
+// plus any later runtime errors — this is the mobile-friendly stand-in
+// for an open devtools console.
+let bootPhaseDone = false;
+window.addEventListener('error', e => {
+  if (bootPhaseDone) return; // don't hijack normal in-app errors after a successful boot
+  showBootError('Script error while starting the app', `${e.message} (${e.filename ? e.filename.split('/').pop() : 'unknown'}:${e.lineno || '?'})`);
+});
+window.addEventListener('unhandledrejection', e => {
+  if (bootPhaseDone) return;
+  showBootError('Unhandled error while starting the app', (e.reason && e.reason.message) || String(e.reason));
+});
 
 window.loadMainframeAssets = async function loadMainframeAssets(){
   const root = document.getElementById('assetRoot');
@@ -1456,13 +1487,33 @@ window.loadMainframeAssets = async function loadMainframeAssets(){
       <div class="boot-text">Fetching asset bundle…</div>
     </div>`;
 
+  if (location.protocol === 'file:'){
+    showBootError(
+      'Opened as a local file',
+      "This page is running from file:// (a downloaded file opened directly), and browsers block fetch() from file:// to an external https URL. Host index.html somewhere real — GitHub Pages, Netlify, Vercel, or `python3 -m http.server` — and open it via http(s):// instead."
+    );
+    return;
+  }
+
   try {
     const res = await fetch(ASSET_BUNDLE_URL + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok){
+      showBootError(`Fetch failed — HTTP ${res.status}`, res.status === 404
+        ? 'The file was not found at that exact path in the repo. Double-check the branch and path.'
+        : 'The bundle URL responded, but not with success.');
+      return;
+    }
     const text = await res.text();
-    if (!text || !text.trim()) throw new Error('empty response');
+    if (!text || !text.trim()){
+      showBootError('Fetched an empty response', 'The request succeeded but returned no content.');
+      return;
+    }
 
     const doc = new DOMParser().parseFromString(text, 'text/html');
+    if (!doc.body || doc.body.children.length === 0){
+      showBootError('Could not parse the bundle', `Got ${text.length} characters back, but DOMParser found no elements in it. First 120 chars: ${text.slice(0,120)}`);
+      return;
+    }
 
     // The bundle may ship its own <style> in future revisions — inject
     // it defensively, even though this build keeps all styling here.
@@ -1478,28 +1529,43 @@ window.loadMainframeAssets = async function loadMainframeAssets(){
       if (node.tagName !== 'SCRIPT') root.appendChild(node);
     });
 
+    if (!document.getElementById('app')){
+      showBootError('Bundle markup is missing #app', 'The fetched HTML parsed fine but did not contain the expected app container — check the bundle file itself.');
+      return;
+    }
+
     // Flip the unlock flag, THEN execute the bundle's script(s). Setting
     // innerHTML on a <script> never runs it, so each one is rebuilt as a
     // fresh element and appended — the standard way to run fetched code.
     window.__MFOPSEC_UNLOCKED__ = true;
     const scripts = Array.from(doc.body.querySelectorAll('script'));
+    if (scripts.length === 0){
+      showBootError('Bundle has no <script> tag', 'The markup loaded, but there was no script to execute — the app has no logic wired up.');
+      return;
+    }
     for (const old of scripts){
       const fresh = document.createElement('script');
       fresh.textContent = old.textContent;
       document.body.appendChild(fresh);
     }
 
-    requestAnimationFrame(() => {
-      const appEl = document.getElementById('app');
-      if (appEl) appEl.classList.remove('app-locked');
-    });
+    // Confirm the bundle's script actually ran and wired up a real
+    // element (sendBtn only exists if its script executed cleanly) —
+    // if not, a global 'error' listener above has likely already shown
+    // the real reason; this is a fallback in case it fired silently.
+    setTimeout(() => {
+      if (!document.getElementById('sendBtn')){
+        showBootError('App did not finish starting', 'The bundle loaded and its script ran, but the composer never appeared. This usually means the script hit an error very early — if no other message appeared above this one, try Retry once more.');
+        return;
+      }
+      bootPhaseDone = true;
+      requestAnimationFrame(() => {
+        const appEl = document.getElementById('app');
+        if (appEl) appEl.classList.remove('app-locked');
+      });
+    }, 60);
   } catch (e){
-    root.innerHTML = `
-      <div class="boot-loading boot-error">
-        <div class="boot-text">Could not load the asset bundle.<br>${escapeLoaderHtml(e.message || 'network error')}</div>
-        <button class="boot-retry" id="bootRetry">Retry</button>
-      </div>`;
-    document.getElementById('bootRetry').addEventListener('click', window.loadMainframeAssets);
+    showBootError('Network error', `${e.name}: ${e.message}. If you're testing this by opening a downloaded file, that's very likely it — see the file:// note above.`);
   }
 };
 </script>
