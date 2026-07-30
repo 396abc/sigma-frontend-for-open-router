@@ -579,6 +579,18 @@ body{
 /* ============================================================
    COMPOSER — floating glass console
 ============================================================ */
+.scroll-bottom-btn{
+  position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%) translateY(8px) scale(.9);
+  width: 34px; height: 34px; border-radius: 50%; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(14,20,17,0.9); border: 1px solid var(--hair-strong); color: var(--text-hi);
+  cursor: pointer; box-shadow: 0 8px 20px -8px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s var(--ease), transform .2s var(--ease), border-color .2s;
+}
+.scroll-bottom-btn.show{ opacity: 1; pointer-events: all; transform: translateX(-50%) translateY(0) scale(1); }
+.scroll-bottom-btn:hover{ border-color: var(--phosphor-dim); color: var(--phosphor); }
+
 .composer-dock{
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 0 20px 20px;
@@ -1197,6 +1209,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       </div>
     </div>
 
+    <button class="scroll-bottom-btn" id="scrollBottomBtn" aria-label="Scroll to latest message" title="Scroll to latest">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
     <div class="composer-dock">
       <div class="composer" id="composer">
 
@@ -1600,6 +1616,7 @@ const state = {
   sessions: [],           // { id, title, messages: [{role, content}], createdAt }
   activeSessionId: null,
   showArchived: false,
+  stickToBottom: true,
   attachments: [],        // { name, kind: 'text'|'image', content|dataUrl }
   ctxMax: 0,
   modalMode: null,        // 'apikey' | 'newsession' | 'addmodel'
@@ -1619,6 +1636,7 @@ const el = {
   newSessionBtn: document.getElementById('newSessionBtn'),
   chatScroll: document.getElementById('chatScroll'),
   chatInner: document.getElementById('chatInner'),
+  scrollBottomBtn: document.getElementById('scrollBottomBtn'),
   emptyState: document.getElementById('emptyState'),
   messageInput: document.getElementById('messageInput'),
   sendBtn: document.getElementById('sendBtn'),
@@ -2433,7 +2451,7 @@ function renderMessages(){
       s.messages.forEach(m => el.chatInner.appendChild(buildMessageNode(m)));
     }
     el.chatInner.style.opacity = '1';
-    scrollToBottom();
+    scrollToBottom(true);
   }, 120);
 }
 function buildMessageNode(m){
@@ -2466,7 +2484,25 @@ function buildMessageNode(m){
     </div>`;
   return wrap;
 }
-function scrollToBottom(){ requestAnimationFrame(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; }); }
+function isNearBottom(){
+  const c = el.chatScroll;
+  return c.scrollHeight - c.scrollTop - c.clientHeight < 140;
+}
+function updateStickState(){
+  state.stickToBottom = isNearBottom();
+  el.scrollBottomBtn.classList.toggle('show', !state.stickToBottom && el.chatScroll.scrollHeight > el.chatScroll.clientHeight + 40);
+}
+el.chatScroll.addEventListener('scroll', updateStickState);
+
+function scrollToBottom(force){
+  if (!force && !state.stickToBottom) return;
+  requestAnimationFrame(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; });
+}
+el.scrollBottomBtn.addEventListener('click', () => {
+  state.stickToBottom = true;
+  scrollToBottom(true);
+  el.scrollBottomBtn.classList.remove('show');
+});
 
 /* ============================================================
    SENDING — real OpenRouter chat completions, streamed
@@ -2517,7 +2553,7 @@ function trySend(){
   s.messages.push(userMsg);
   if (el.emptyState.parentElement) el.emptyState.remove();
   el.chatInner.appendChild(buildMessageNode(userMsg));
-  scrollToBottom();
+  scrollToBottom(true);
   renderSessionList();
   saveSessions();
 
