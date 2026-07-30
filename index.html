@@ -554,4 +554,876 @@ select#sidebarModel:focus{ border-color: var(--phosphor-dim); }
 @keyframes liquid-border{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
 .composer.focused{
   border-color: rgba(61,255,160,0.4);
-  box-shadow: 0 -10px 50px -14px
+  box-shadow: 0 -10px 50px -14px var(--phosphor-glow), 0 0 0 1px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.composer-toprow{
+  display:flex; align-items:center; gap: 8px; flex-wrap: wrap;
+  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--hair);
+}
+.chip{
+  display:flex; align-items:center; gap:6px;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute);
+  padding: 5px 10px; border-radius: 20px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--hair);
+}
+.chip.model-chip{ color: var(--text-hi); }
+.chip.model-chip .dot{ width:6px; height:6px; border-radius:50%; background: var(--phosphor); box-shadow: 0 0 6px var(--phosphor-glow); }
+
+.toggle{
+  display:flex; align-items:center; gap:7px; cursor:pointer;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute);
+  padding: 5px 10px 5px 6px; border-radius: 20px; border: 1px solid var(--hair);
+  transition: all .2s var(--ease);
+  user-select: none;
+}
+.toggle.on{ color: var(--text-hi); border-color: var(--hair-strong); background: rgba(61,255,160,0.05); }
+.switch{
+  width: 26px; height: 15px; border-radius: 10px; background: rgba(255,255,255,0.08);
+  position: relative; transition: background .25s var(--ease);
+  flex-shrink:0;
+}
+.switch::after{
+  content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%;
+  background: var(--text-mute); transition: all .25s var(--ease);
+}
+.toggle.on .switch{ background: var(--phosphor-dim); }
+.toggle.on .switch::after{ left: 13px; background: var(--phosphor); box-shadow: 0 0 6px var(--phosphor-glow); }
+.toggle.amber.on .switch{ background: rgba(255,180,84,0.35); }
+.toggle.amber.on .switch::after{ background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
+.toggle.amber.on{ color: var(--text-hi); }
+
+.tool-live{
+  margin-left: auto; display:flex; align-items:center; gap:6px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-dim);
+}
+.tool-live .pip{ width:6px; height:6px; border-radius:50%; background: var(--text-dim); transition: all .3s; }
+.tool-live.active .pip{ background: #6fd8ff; box-shadow: 0 0 8px rgba(111,216,255,.7); animation: pulse-dot 1.4s infinite; }
+.tool-live.active{ color: #6fd8ff; }
+
+.attach-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 8px; }
+.attach-chip{
+  display:flex; align-items:center; gap:6px;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text);
+  background: rgba(255,255,255,0.04); border: 1px solid var(--hair-strong);
+  padding: 5px 8px 5px 10px; border-radius: 8px;
+  animation: msg-in .3s var(--ease) both;
+}
+.attach-chip button{ background:none; border:none; color: var(--text-mute); cursor:pointer; font-size: 13px; line-height:1; padding: 0 2px; }
+.attach-chip button:hover{ color: var(--danger); }
+
+.composer-inputrow{ display:flex; align-items:flex-end; gap:10px; }
+textarea#messageInput{
+  flex:1; resize:none; background: transparent; border: none; outline: none;
+  color: var(--text-hi); font-family: var(--font-body); font-size: 14px; line-height:1.5;
+  max-height: 160px; padding: 6px 4px;
+}
+textarea#messageInput::placeholder{ color: var(--text-dim); }
+
+.icon-round{
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--hair-strong);
+  color: var(--text-mute); cursor:pointer;
+  transition: transform .18s var(--ease), color .2s, border-color .2s, box-shadow .2s;
+}
+.icon-round:hover{ color: var(--phosphor); border-color: var(--phosphor-dim); }
+
+.send-btn{
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(150deg, var(--phosphor), #1fae6e);
+  border: none; color: #06120c; cursor:pointer;
+  box-shadow: 0 4px 18px -4px var(--phosphor-glow);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), filter .2s;
+}
+.send-btn:hover{ box-shadow: 0 6px 26px -4px var(--phosphor-glow); filter: brightness(1.08); }
+.send-btn:active{ transform: scale(.92); }
+.send-btn:disabled{ opacity: .35; filter: none; box-shadow:none; cursor:not-allowed; }
+
+.composer-footrow{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hair);
+}
+.foot-hint{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); }
+.foot-hint kbd{
+  background: rgba(255,255,255,0.05); border: 1px solid var(--hair-strong);
+  padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); color: var(--text-mute);
+}
+.token-readout{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); }
+.token-readout b{ color: var(--text-mute); font-weight: 500; }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 900px){
+  .app{ grid-template-columns: 0px 1fr; }
+  .sidebar{
+    position: fixed; top:0; left:0; bottom:0;
+    width: min(300px, 84vw); z-index: 30;
+    padding-top: env(safe-area-inset-top);
+    transform: translateX(-100%); transition: transform .38s var(--ease);
+    opacity: 1 !important; pointer-events: all !important;
+  }
+  .app.sidebar-collapsed .sidebar{ transform: translateX(-100%); }
+  .app.sidebar-open .sidebar{ transform: translateX(0); box-shadow: 30px 0 60px rgba(0,0,0,.55); }
+  .app.sidebar-open .sidebar-scrim{ display:block; opacity:1; }
+
+  .topbar{ padding: 12px 14px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 10px; }
+  .topbar-meters{ display:none; }
+  .topbar-title{ font-size: 12px; max-width: 46vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar-sub{ display:none; }
+
+  .icon-btn{ width: 38px; height: 38px; }
+
+  .chat-scroll{ padding: 18px 12px 190px; }
+  .empty-state{ margin-top: 4vh; }
+  .empty-state h2{ font-size: 17px; }
+  .suggestion-grid{ grid-template-columns: 1fr; }
+
+  .composer-dock{ padding: 0 10px calc(12px + env(safe-area-inset-bottom)); }
+  .composer{ padding: 10px 10px 10px; border-radius: 18px; }
+  .composer-toprow{ gap: 6px; }
+  .chip.model-chip{ order: -1; flex-basis: 100%; }
+  .toggle{ font-size: 10px; padding: 5px 8px 5px 5px; }
+  .tool-live{ margin-left: 0; flex-basis: 100%; order: 2; }
+
+  textarea#messageInput{ font-size: 16px; } /* prevents iOS auto-zoom on focus */
+  .icon-round, .send-btn{ width: 40px; height: 40px; }
+
+  .msg-avatar{ width: 26px; height: 26px; }
+  .bubble{ font-size: 13.5px; padding: 11px 13px; }
+  .msg-hash{ display:none; }
+
+  .foot-hint{ font-size: 9px; }
+}
+
+@media (max-width: 420px){
+  .brand{ padding: 18px 16px 14px; }
+  .new-session{ margin: 14px 14px 8px; }
+  .composer-toprow .toggle .toggle-label{ display:none; } /* icon-only toggles on very small phones */
+  .toggle{ padding: 6px; }
+  .foot-hint{ display:none; }
+}
+
+@media (hover: none){
+  /* touch devices: skip magnetic drift, rely on tap feedback */
+  .magnetic{ transition: transform .12s var(--ease); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* focus visibility */
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .session-item:focus-visible, .toggle:focus-visible{
+  outline: 2px solid var(--phosphor); outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ BACKGROUND ATMOSPHERE ============ -->
+<div class="atmosphere"></div>
+<canvas id="particleCanvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="app" id="app">
+
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">MAINFRAME<span class="slash">/</span>OPSEC<span class="brand-cursor"></span></div>
+      <div class="brand-sub">AI Operations Console</div>
+    </div>
+
+    <button class="new-session" id="newSessionBtn">
+      <span class="plus">+</span> New Session
+    </button>
+
+    <div class="session-search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="sessionSearch" placeholder="filter session logs..." autocomplete="off">
+    </div>
+
+    <div class="session-log-label">// Session Logs</div>
+    <div class="session-list" id="sessionList"></div>
+
+    <div class="sidebar-footer">
+      <div class="model-select-wrap">
+        <div class="field-label">Active Model</div>
+        <select id="sidebarModel">
+          <option value="deepseek/deepseek-v3.1-terminus" selected>DeepSeek V3.1 Terminus</option>
+          <option value="qwen/qwen3-235b-a22b-2507">Qwen3 235B A22B</option>
+          <option value="qwen/qwen3-235b-thinking">Qwen3 235B Thinking</option>
+          <option value="inclusionai/ling-1t">Ling-1T</option>
+          <option value="inclusionai/ring-1t">Ring-1T</option>
+          <option value="moonshotai/kimi-k2">Kimi K2-0905</option>
+        </select>
+      </div>
+      <div class="operator" id="operatorArea">
+        <div class="operator-avatar">OP</div>
+        <div>
+          <div class="operator-name">Operator // Local</div>
+          <div class="operator-clearance">CLEARANCE: ALPHA</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn" id="sidebarToggle" title="Toggle console rail" aria-label="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <div>
+        <div class="topbar-title" id="activeSessionTitle">SESS-0421 :: New Session</div>
+        <div class="topbar-sub">encrypted channel · DeepSeek V3.1 Terminus</div>
+      </div>
+      <div class="topbar-meters">
+        <div class="meter">
+          <div class="meter-label">Tokens</div>
+          <div class="meter-value" id="tokenMeter">0 / 128K</div>
+        </div>
+        <div class="meter">
+          <div class="meter-label">Context Window</div>
+          <div class="ctx-bar"><div class="ctx-bar-fill" id="ctxFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-inner" id="chatInner">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-glyph">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3dffa0" stroke-width="1.6"><path d="M4 17V7a2 2 0 012-2h8l6 6v6a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 5v6h6"/></svg>
+          </div>
+          <h2>MainframeOpSec AI</h2>
+          <p>Secure operations console. Query system logs, review architecture, or open a new session below.</p>
+          <div class="suggestion-grid">
+            <button class="suggestion" data-prompt="Audit our firewall ruleset for stale allowlist entries.">
+              <div class="s-title">Audit firewall ruleset</div>
+              <div class="s-sub">// security · infra</div>
+            </button>
+            <button class="suggestion" data-prompt="Draft an incident response runbook for a credential leak.">
+              <div class="s-title">Draft IR runbook</div>
+              <div class="s-sub">// response · docs</div>
+            </button>
+            <button class="suggestion" data-prompt="Write a Python script to parse mainframe access logs.">
+              <div class="s-title">Parse access logs</div>
+              <div class="s-sub">// scripting · python</div>
+            </button>
+            <button class="suggestion" data-prompt="Explain how a zero-trust network segments a legacy mainframe.">
+              <div class="s-title">Explain zero-trust segmentation</div>
+              <div class="s-sub">// architecture</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-dock">
+      <div class="composer" id="composer">
+
+        <div class="composer-toprow">
+          <div class="chip model-chip"><span class="dot"></span> DeepSeek V3.1 Terminus</div>
+          <div class="toggle" id="reasoningToggle" tabindex="0" role="switch" aria-checked="false">
+            <span class="switch"></span><span class="toggle-label">Reasoning Mode</span>
+          </div>
+          <div class="toggle amber on" id="fastToggle" tabindex="0" role="switch" aria-checked="true">
+            <span class="switch"></span><span class="toggle-label">Fast Mode</span>
+          </div>
+          <div class="tool-live" id="toolLive"><span class="pip"></span> Tools idle</div>
+        </div>
+
+        <div class="attach-row" id="attachRow"></div>
+
+        <div class="composer-inputrow">
+          <button class="icon-round" id="attachBtn" title="Attach file" aria-label="Attach file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input type="file" id="fileInput" style="display:none" multiple>
+          <textarea id="messageInput" rows="1" placeholder="Transmit a query to the mainframe..."></textarea>
+          <button class="send-btn magnetic" id="sendBtn" title="Send" aria-label="Send message" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </button>
+        </div>
+
+        <div class="composer-footrow">
+          <div class="foot-hint"><kbd>Enter</kbd> to transmit · <kbd>Shift+Enter</kbd> for newline</div>
+          <div class="token-readout">est. <b id="footTokens">0</b> tokens this turn</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+const state = {
+  sidebarOpen: window.innerWidth > 900,
+  reasoningMode: false,
+  fastMode: true,
+  sessions: [],
+  activeSessionId: null,
+  attachments: [],
+  ctxUsed: 0,
+  ctxMax: 128000,
+};
+
+const el = {
+  app: document.getElementById('app'),
+  sidebarToggle: document.getElementById('sidebarToggle'),
+  sidebarScrim: document.getElementById('sidebarScrim'),
+  sessionList: document.getElementById('sessionList'),
+  sessionSearch: document.getElementById('sessionSearch'),
+  newSessionBtn: document.getElementById('newSessionBtn'),
+  chatScroll: document.getElementById('chatScroll'),
+  chatInner: document.getElementById('chatInner'),
+  emptyState: document.getElementById('emptyState'),
+  messageInput: document.getElementById('messageInput'),
+  sendBtn: document.getElementById('sendBtn'),
+  composer: document.getElementById('composer'),
+  reasoningToggle: document.getElementById('reasoningToggle'),
+  fastToggle: document.getElementById('fastToggle'),
+  toolLive: document.getElementById('toolLive'),
+  attachBtn: document.getElementById('attachBtn'),
+  fileInput: document.getElementById('fileInput'),
+  attachRow: document.getElementById('attachRow'),
+  tokenMeter: document.getElementById('tokenMeter'),
+  footTokens: document.getElementById('footTokens'),
+  ctxFill: document.getElementById('ctxFill'),
+  activeSessionTitle: document.getElementById('activeSessionTitle'),
+  sidebarModel: document.getElementById('sidebarModel'),
+};
+
+/* ============================================================
+   MOCK SESSION LOGS
+============================================================ */
+function seedSessions(){
+  const seed = [
+    { title: 'Kernel Patch Review', tag: 'active', ago: '2m ago' },
+    { title: 'Firewall Ruleset Audit', tag: 'active', ago: '41m ago' },
+    { title: 'Credential Leak — IR Draft', tag: 'archived', ago: '3h ago' },
+    { title: 'Legacy COBOL Migration Notes', tag: 'archived', ago: '1d ago' },
+    { title: 'Zero-Trust Segmentation Plan', tag: 'archived', ago: '2d ago' },
+  ];
+  seed.forEach((s, i) => {
+    state.sessions.push({
+      id: 'sess-' + (1000 + i),
+      code: 'SESS-04' + (17 - i),
+      title: s.title,
+      tag: s.tag,
+      ago: s.ago,
+      messages: [],
+    });
+  });
+}
+
+function createSession(){
+  const id = 'sess-' + Date.now();
+  const code = 'SESS-' + Math.floor(4000 + Math.random()*900);
+  const session = { id, code, title: 'New Session', tag: 'active', ago: 'now', messages: [] };
+  state.sessions.unshift(session);
+  setActiveSession(id);
+  renderSessionList();
+}
+
+function setActiveSession(id){
+  state.activeSessionId = id;
+  const s = state.sessions.find(x => x.id === id);
+  el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
+  renderSessionList();
+  renderMessages();
+  if (window.innerWidth <= 900) closeSidebarOverlay();
+}
+
+function renderSessionList(filter=''){
+  el.sessionList.innerHTML = '';
+  state.sessions
+    .filter(s => s.title.toLowerCase().includes(filter.toLowerCase()))
+    .forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
+      item.tabIndex = 0;
+      item.innerHTML = `
+        <div class="session-dot"></div>
+        <div class="session-meta">
+          <div class="session-title">${escapeHtml(s.title)}</div>
+          <div class="session-sub">
+            <span>${s.code}</span>
+            <span class="tag ${s.tag}">${s.tag}</span>
+            <span>${s.ago}</span>
+          </div>
+        </div>`;
+      item.addEventListener('click', () => setActiveSession(s.id));
+      el.sessionList.appendChild(item);
+    });
+}
+
+el.sessionSearch.addEventListener('input', e => renderSessionList(e.target.value));
+el.newSessionBtn.addEventListener('click', createSession);
+
+/* ============================================================
+   SIDEBAR TOGGLE
+============================================================ */
+function updateSidebarClass(){
+  if (window.innerWidth <= 900){
+    el.app.classList.toggle('sidebar-open', state.sidebarOpen);
+    el.app.classList.remove('sidebar-collapsed');
+  } else {
+    el.app.classList.toggle('sidebar-collapsed', !state.sidebarOpen);
+    el.app.classList.remove('sidebar-open');
+  }
+}
+function closeSidebarOverlay(){ state.sidebarOpen = false; updateSidebarClass(); }
+el.sidebarToggle.addEventListener('click', () => { state.sidebarOpen = !state.sidebarOpen; updateSidebarClass(); });
+el.sidebarScrim.addEventListener('click', closeSidebarOverlay);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.innerWidth <= 900) closeSidebarOverlay(); });
+window.addEventListener('resize', updateSidebarClass);
+
+/* ============================================================
+   TOGGLES (reasoning / fast mode)
+============================================================ */
+function bindToggle(node, key, onChange){
+  const activate = () => {
+    state[key] = !state[key];
+    node.classList.toggle('on', state[key]);
+    node.setAttribute('aria-checked', String(state[key]));
+    if (onChange) onChange();
+  };
+  node.addEventListener('click', activate);
+  node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+}
+bindToggle(el.reasoningToggle, 'reasoningMode');
+bindToggle(el.fastToggle, 'fastMode');
+
+/* ============================================================
+   MODEL SELECT sync
+============================================================ */
+el.sidebarModel.addEventListener('change', () => {
+  const label = el.sidebarModel.options[el.sidebarModel.selectedIndex].text;
+  document.querySelector('.model-chip').innerHTML = `<span class="dot"></span> ${label}`;
+  document.querySelector('.topbar-sub').textContent = `encrypted channel · ${label}`;
+});
+
+/* ============================================================
+   ATTACHMENTS (mock)
+============================================================ */
+el.attachBtn.addEventListener('click', () => el.fileInput.click());
+el.fileInput.addEventListener('change', () => {
+  Array.from(el.fileInput.files).forEach(f => {
+    state.attachments.push(f.name);
+  });
+  renderAttachments();
+  el.fileInput.value = '';
+});
+function renderAttachments(){
+  el.attachRow.innerHTML = '';
+  state.attachments.forEach((name, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'attach-chip';
+    chip.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+      <span>${escapeHtml(name)}</span><button aria-label="remove attachment">&times;</button>`;
+    chip.querySelector('button').addEventListener('click', () => { state.attachments.splice(i,1); renderAttachments(); });
+    el.attachRow.appendChild(chip);
+  });
+}
+
+/* ============================================================
+   COMPOSER: autosize + focus glow + enable send
+============================================================ */
+el.messageInput.addEventListener('input', () => {
+  el.messageInput.style.height = 'auto';
+  el.messageInput.style.height = Math.min(el.messageInput.scrollHeight, 160) + 'px';
+  el.sendBtn.disabled = el.messageInput.value.trim().length === 0;
+  el.footTokens.textContent = estimateTokens(el.messageInput.value);
+});
+el.messageInput.addEventListener('focus', () => el.composer.classList.add('focused'));
+el.messageInput.addEventListener('blur', () => el.composer.classList.remove('focused'));
+el.messageInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    trySend();
+  }
+});
+el.sendBtn.addEventListener('click', trySend);
+
+document.querySelectorAll('.suggestion').forEach(btn => {
+  btn.addEventListener('click', () => {
+    el.messageInput.value = btn.dataset.prompt;
+    el.messageInput.dispatchEvent(new Event('input'));
+    trySend();
+  });
+});
+
+function estimateTokens(text){ return Math.max(0, Math.round(text.trim().length / 4)); }
+
+/* ============================================================
+   MAGNETIC HOVER for buttons
+============================================================ */
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const r = btn.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width/2;
+    const y = e.clientY - r.top - r.height/2;
+    btn.style.transform = `translate(${x*0.28}px, ${y*0.28}px)`;
+  });
+  btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+});
+
+/* ============================================================
+   MESSAGE RENDERING (mini markdown)
+============================================================ */
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function renderMarkdownLite(raw){
+  // extract fenced code blocks first
+  const blocks = [];
+  let text = raw.replace(/```(\w+)?\n([\s\S]*?)```/g, (m, lang, code) => {
+    blocks.push({ lang: lang || 'text', code: code.replace(/\n$/,'') });
+    return `\u0000CODEBLOCK${blocks.length-1}\u0000`;
+  });
+
+  text = escapeHtml(text);
+  text = text.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // lists
+  const lines = text.split('\n');
+  let html = ''; let inList = false;
+  lines.forEach(line => {
+    if (/^\s*-\s+/.test(line)){
+      if (!inList){ html += '<ul>'; inList = true; }
+      html += `<li>${line.replace(/^\s*-\s+/, '')}</li>`;
+    } else {
+      if (inList){ html += '</ul>'; inList = false; }
+      if (line.trim() === '') { html += ''; }
+      else html += `<p>${line}</p>`;
+    }
+  });
+  if (inList) html += '</ul>';
+
+  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, idx) => {
+    const b = blocks[idx];
+    return renderCodeBlock(b.lang, b.code);
+  });
+  return html;
+}
+
+function highlightCode(code, lang){
+  let c = escapeHtml(code);
+  c = c.replace(/(#.*$|\/\/.*$)/gm, '<span class="tok-com">$1</span>');
+  c = c.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="tok-str">$1</span>');
+  c = c.replace(/\b(def|class|import|from|return|if|else|elif|for|while|in|const|let|var|function|async|await|try|except|catch|new|true|false|None|null|self)\b/g, '<span class="tok-kw">$1</span>');
+  c = c.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g, '<span class="tok-fn">$1</span>');
+  c = c.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>');
+  return c;
+}
+
+let codeBlockCounter = 0;
+function renderCodeBlock(lang, code){
+  const id = 'cb-' + (codeBlockCounter++);
+  return `<div class="codeblock">
+    <div class="codeblock-head">
+      <span>${escapeHtml(lang)}</span>
+      <button class="copy-btn" data-target="${id}">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        copy
+      </button>
+    </div>
+    <pre id="${id}" data-raw="${encodeURIComponent(code)}">${highlightCode(code, lang)}</pre>
+  </div>`;
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  const pre = document.getElementById(btn.dataset.target);
+  const raw = decodeURIComponent(pre.dataset.raw);
+  navigator.clipboard.writeText(raw).then(() => {
+    btn.classList.add('copied');
+    const original = btn.innerHTML;
+    btn.innerHTML = 'copied ✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1400);
+  });
+});
+
+document.addEventListener('click', e => {
+  const head = e.target.closest('.reasoning-head');
+  if (!head) return;
+  head.closest('.reasoning').classList.toggle('open');
+});
+
+/* ============================================================
+   SENDING / STREAMING
+============================================================ */
+function nowTime(){
+  const d = new Date();
+  return d.toTimeString().slice(0,8);
+}
+function randomHash(){
+  return Array.from({length:6}, () => Math.floor(Math.random()*16).toString(16)).join('');
+}
+
+function ensureSession(){
+  if (!state.activeSessionId){
+    createSession();
+  }
+}
+
+function currentSession(){
+  return state.sessions.find(s => s.id === state.activeSessionId);
+}
+
+function renderMessages(){
+  el.chatInner.innerHTML = '';
+  const s = currentSession();
+  if (!s || s.messages.length === 0){
+    el.chatInner.appendChild(el.emptyState);
+    return;
+  }
+  s.messages.forEach(m => el.chatInner.appendChild(buildMessageNode(m)));
+  scrollToBottom();
+}
+
+function buildMessageNode(m){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + m.role;
+  wrap.innerHTML = `
+    <div class="msg-avatar">${m.role === 'user' ? 'OP' : 'AI'}</div>
+    <div class="msg-body">
+      <div class="msg-head">
+        <span class="msg-role">${m.role === 'user' ? 'OPERATOR' : 'MAINFRAME-AI'}</span>
+        <span class="msg-time">${m.time}</span>
+        <span class="msg-hash">#${m.hash}</span>
+      </div>
+      <div class="bubble">${m.html}</div>
+    </div>`;
+  return wrap;
+}
+
+function scrollToBottom(){
+  requestAnimationFrame(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; });
+}
+
+function trySend(){
+  const text = el.messageInput.value.trim();
+  if (!text) return;
+  ensureSession();
+  const s = currentSession();
+
+  if (s.messages.length === 0){
+    s.title = text.slice(0, 34) + (text.length > 34 ? '…' : '');
+    el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
+    renderSessionList();
+  }
+
+  const userMsg = { role: 'user', html: renderMarkdownLite(text), time: nowTime(), hash: randomHash() };
+  s.messages.push(userMsg);
+  if (el.emptyState.parentElement) el.emptyState.remove();
+  el.chatInner.appendChild(buildMessageNode(userMsg));
+  scrollToBottom();
+
+  el.messageInput.value = '';
+  el.messageInput.style.height = 'auto';
+  el.sendBtn.disabled = true;
+  el.footTokens.textContent = '0';
+  state.attachments = [];
+  renderAttachments();
+
+  bumpContext(estimateTokens(text));
+  respondTo(text);
+}
+
+function bumpContext(n){
+  state.ctxUsed = Math.min(state.ctxMax, state.ctxUsed + n * 3);
+  const pct = Math.min(100, (state.ctxUsed / state.ctxMax) * 100);
+  el.ctxFill.style.width = pct.toFixed(1) + '%';
+  el.tokenMeter.textContent = `${Math.round(state.ctxUsed/1000)}K / 128K`;
+}
+
+/* fake tool trigger based on keywords */
+function detectTool(text){
+  const t = text.toLowerCase();
+  if (t.includes('log') || t.includes('audit')) return 'Querying log index';
+  if (t.includes('search') || t.includes('find')) return 'Searching knowledge base';
+  if (t.includes('file') || t.includes('script') || t.includes('parse')) return 'Reading file context';
+  return null;
+}
+
+function respondTo(userText){
+  const s = currentSession();
+
+  // typing indicator
+  const typingNode = document.createElement('div');
+  typingNode.className = 'msg ai';
+  typingNode.innerHTML = `
+    <div class="msg-avatar">AI</div>
+    <div class="msg-body">
+      <div class="msg-head"><span class="msg-role">MAINFRAME-AI</span><span class="msg-time">${nowTime()}</span></div>
+      <div class="bubble typing"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>`;
+  el.chatInner.appendChild(typingNode);
+  scrollToBottom();
+
+  const tool = detectTool(userText);
+  if (tool){
+    el.toolLive.classList.add('active');
+    el.toolLive.innerHTML = `<span class="pip"></span> ${tool}...`;
+  }
+
+  const thinkDelay = state.fastMode ? 500 : 1300;
+
+  setTimeout(() => {
+    typingNode.remove();
+    streamAssistantReply(userText, tool);
+  }, thinkDelay);
+}
+
+function buildFakeReply(userText){
+  const t = userText.toLowerCase();
+  if (t.includes('firewall') || t.includes('audit')){
+    return "Ran a pass over the ruleset. Findings:\n\n- **14 stale allowlist entries** referencing decommissioned hosts\n- Two rules with overlapping CIDR ranges — safe to consolidate\n- No unrestricted inbound rules detected on management VLAN\n\nHere's a quick script to flag stale entries automatically:\n\n```python\ndef find_stale_rules(rules, active_hosts):\n    stale = []\n    for rule in rules:\n        if rule.host not in active_hosts:\n            stale.append(rule)\n    return stale\n```\n\nWant me to generate the full remediation runbook next?";
+  }
+  if (t.includes('incident') || t.includes('runbook') || t.includes('leak')){
+    return "Drafted a first pass of the runbook:\n\n- **Contain** — rotate the leaked credential and revoke active sessions\n- **Assess** — pull auth logs for the affected window\n- **Notify** — page the on-call security lead\n- **Remediate** — patch the ingress vector, re-issue secrets\n- **Review** — postmortem within 48 hours\n\nI can expand any section into full detail, or format this as a `.md` doc for your runbook repo.";
+  }
+  if (t.includes('parse') || t.includes('python') || t.includes('script')){
+    return "Here's a starting point for parsing mainframe access logs:\n\n```python\nimport re\n\nPATTERN = re.compile(r'(?P<ts>\\S+) (?P<user>\\S+) (?P<action>\\S+) (?P<resource>\\S+)')\n\ndef parse_log(path):\n    entries = []\n    with open(path) as f:\n        for line in f:\n            m = PATTERN.match(line)\n            if m:\n                entries.append(m.groupdict())\n    return entries\n```\n\nThis captures timestamp, user, action, and resource fields. Let me know the actual log format and I'll tighten the regex.";
+  }
+  if (t.includes('zero-trust') || t.includes('zero trust') || t.includes('segment')){
+    return "Zero-trust segmentation around a legacy mainframe usually comes down to three layers:\n\n- **Identity-aware proxy** in front of every terminal session — no implicit trust from network location\n- **Micro-segmented VLANs** isolating the mainframe from general corporate traffic\n- **Continuous verification** — short-lived credentials instead of standing access\n\nThe mainframe itself often can't be modified, so most of the enforcement happens at the network edge and the proxy layer in front of it.";
+  }
+  return "Acknowledged. I've logged the request and cross-referenced it against the active session context. Give me a bit more detail on the target system or desired output format and I'll put together a concrete plan — including any scripts, configs, or docs you need.";
+}
+
+function streamAssistantReply(userText, tool){
+  const s = currentSession();
+  const replyRaw = buildFakeReply(userText);
+  const showReasoning = state.reasoningMode;
+
+  const node = document.createElement('div');
+  node.className = 'msg ai';
+  const hash = randomHash();
+  node.innerHTML = `
+    <div class="msg-avatar">AI</div>
+    <div class="msg-body">
+      <div class="msg-head">
+        <span class="msg-role">MAINFRAME-AI</span>
+        <span class="msg-time">${nowTime()}</span>
+        <span class="msg-hash">#${hash}</span>
+      </div>
+      ${tool ? `<div class="tool-badge"><span class="tool-spin"></span> ${escapeHtml(tool)}</div>` : ''}
+      ${showReasoning ? `<div class="reasoning open">
+          <div class="reasoning-head">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+            reasoning trace
+          </div>
+          <div class="reasoning-body">Parsing intent → identifying relevant subsystem → cross-checking prior session context → selecting response strategy → drafting structured output...</div>
+        </div>` : ''}
+      <div class="bubble"><span class="stream-target"></span><span class="cursor-blip"></span></div>
+    </div>`;
+  el.chatInner.appendChild(node);
+  scrollToBottom();
+
+  const target = node.querySelector('.stream-target');
+  const cursor = node.querySelector('.cursor-blip');
+  const fullHtml = renderMarkdownLite(replyRaw);
+
+  // stream by revealing the raw text progressively, then finalize with full markdown render
+  const chars = replyRaw.split('');
+  let i = 0;
+  const speed = state.fastMode ? 6 : 18; // ms per tick
+  const chunk = state.fastMode ? 3 : 1;
+
+  const interval = setInterval(() => {
+    i += chunk;
+    target.textContent = replyRaw.slice(0, i);
+    scrollToBottom();
+    bumpContext(0.3);
+    if (i >= chars.length){
+      clearInterval(interval);
+      cursor.remove();
+      node.querySelector('.bubble').innerHTML = fullHtml;
+      el.toolLive.classList.remove('active');
+      el.toolLive.innerHTML = '<span class="pip"></span> Tools idle';
+      bumpContext(estimateTokens(replyRaw));
+      s.messages.push({ role: 'ai', html: fullHtml, time: nowTime(), hash });
+      scrollToBottom();
+    }
+  }, speed);
+}
+
+/* ============================================================
+   PARTICLE BACKGROUND — lightweight drifting nodes
+============================================================ */
+(function particles(){
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+  const COUNT = 46;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  function init(){
+    particles = Array.from({length: COUNT}, () => ({
+      x: Math.random()*w, y: Math.random()*h,
+      vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15,
+      r: Math.random()*1.6 + 0.4,
+      hueAmber: Math.random() < 0.18,
+    }));
+  }
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.hueAmber ? 'rgba(255,180,84,0.55)' : 'rgba(61,255,160,0.5)';
+      ctx.fill();
+    });
+    // connective lines for nearby particles
+    for (let a=0; a<particles.length; a++){
+      for (let b=a+1; b<particles.length; b++){
+        const dx = particles[a].x - particles[b].x, dy = particles[a].y - particles[b].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 110){
+          ctx.beginPath();
+          ctx.moveTo(particles[a].x, particles[a].y);
+          ctx.lineTo(particles[b].x, particles[b].y);
+          ctx.strokeStyle = `rgba(61,255,160,${0.08 * (1 - dist/110)})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  window.addEventListener('resize', () => { resize(); });
+  resize(); init(); tick();
+})();
+
+/* ============================================================
+   INIT
+============================================================ */
+seedSessions();
+renderSessionList();
+updateSidebarClass();
+bumpContext(0);
+</script>
+</body>
+</html>
