@@ -748,7 +748,8 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 ============================================================ */
 #opsecGate{
   position: fixed; inset: 0; z-index: 200;
-  background: var(--void);
+  background: rgba(6,9,7,0.86);
+  backdrop-filter: blur(1px);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
   transition: opacity .5s var(--ease);
@@ -809,6 +810,24 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 .gate-caveat{
   margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair);
   font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); line-height: 1.6;
+}
+.gate-egg{
+  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hair);
+}
+.gate-egg summary{
+  cursor: pointer; list-style: none; font-family: var(--font-mono); font-size: 10px;
+  color: var(--amber); letter-spacing: .5px; user-select: none;
+}
+.gate-egg summary::-webkit-details-marker{ display: none; }
+.gate-egg summary:hover{ color: #ffcb80; }
+.gate-egg p{
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); line-height: 1.75;
+  margin: 10px 0 0;
+}
+.gate-egg p strong{ color: var(--phosphor); font-weight: 600; }
+.gate-egg-punchline{
+  color: var(--text-hi) !important; margin-top: 8px !important;
+  padding-top: 8px; border-top: 1px dashed var(--hair);
 }
 #app{ transition: opacity .4s var(--ease); }
 #app.app-locked{ opacity: 0; pointer-events: none; }
@@ -905,10 +924,28 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <button class="gate-override" id="gateOverride">Proceed without VPN →</button>
     </div>
 
+    <details class="gate-egg">
+      <summary>▸ RECOMMENDED OPSEC POSTURE (click to expand)</summary>
+      <p>
+        Look, a VPN alone barely counts anymore. Bare minimum, real operators are running
+        <strong>VLESS + REALITY + XTLS-Vision + uTLS fingerprint spoofing</strong> tunneled over
+        <strong>WireGuard</strong>, chained through <strong>Tor</strong>, inside
+        <strong>Whonix</strong>, running as a compartment in <strong>Qubes OS</strong>, with
+        <strong>DNS-over-HTTPS + DNSSEC</strong> pointed at <strong>Mullvad</strong>,
+        <strong>Encrypted SNI / ECH</strong> on a hardened <strong>Firefox + Arkenfox</strong>
+        build running <strong>uBlock Origin</strong> and <strong>NoScript</strong>,
+        <strong>HTTPS-Only Mode</strong> enforced, and full <strong>MAC address randomization</strong>
+        — because just booting <strong>Tails</strong> in a <strong>Kali</strong> VM off a
+        <strong>Flipper Zero</strong> isn't enough anymore, bro.
+      </p>
+      <p class="gate-egg-punchline">In reality: this gate just needs a VPN. That's it. Relax.</p>
+    </details>
+
     <div class="gate-caveat">
-      This check looks up your egress IP's ASN/hosting reputation via a public IP-intelligence
-      API — it's a best-effort heuristic, not a cryptographic guarantee, and can be bypassed
-      by anyone with dev tools open. Treat it as a themed reminder, not real access control.
+      This runs two independent public IP-intelligence lookups against your resolved egress IP
+      and passes on any hit from either — still a best-effort heuristic, not a cryptographic
+      guarantee. Privacy extensions sometimes block the lookup calls themselves; if both fail,
+      the override below lets you through instead of hard-locking you out.
     </div>
   </div>
 </div>
@@ -1074,9 +1111,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 <script>
 /* ============================================================
    OPSEC GATE — best-effort client-side VPN/proxy detection.
-   This is a heuristic IP-reputation lookup, not real access
-   control: anyone can bypass it via devtools. It exists as a
-   themed gate, not a security boundary.
+   Runs TWO independent IP-intelligence lookups in parallel
+   (dedicated VPN/proxy/datacenter/Tor database + ASN keyword
+   cross-check against a broad provider list) and passes on
+   ANY positive signal from either — this maximizes recall
+   since no single free database enumerates every VPN exit
+   node. Still a heuristic IP-reputation lookup, NOT real
+   access control: anyone can bypass it via devtools, and
+   privacy extensions (uBlock/NoScript/Brave shields) may
+   block the lookup calls themselves, in which case we fail
+   open to the manual override rather than lock you out.
 ============================================================ */
 (function opsecGate(){
   const gateEl = document.getElementById('opsecGate');
@@ -1090,17 +1134,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   const overrideBtn = document.getElementById('gateOverride');
   const appEl = document.getElementById('app');
 
-  // Providers whose org/ASN name commonly shows up on VPN exit nodes or
-  // datacenter/hosting ranges — used as a fallback heuristic if the
-  // primary IP-intelligence lookup is unavailable.
+  // Org/ASN substrings that commonly show up on VPN exit nodes,
+  // anonymizing relays, or the datacenter ranges VPN providers
+  // rent — broad on purpose, since this runs as an OR alongside
+  // the dedicated VPN database below, not standalone.
   const VPN_HOST_KEYWORDS = [
-    'vpn','nordvpn','nord security','expressvpn','surfshark','mullvad','proton','protonvpn',
-    'private internet access','pia ','cyberghost','windscribe','ipvanish','hotspot shield',
-    'tunnelbear','hide.me','purevpn','ivpn','perfect privacy','airvpn','torguard',
+    'vpn','nordvpn','nord security','tefincom','expressvpn','surfshark','mullvad','proton','protonvpn',
+    'private internet access',' pia ','kape technologies','cyberghost','windscribe','ipvanish','hotspot shield',
+    'tunnelbear','hide.me','purevpn','ivpn','perfect privacy','airvpn','torguard','privado','atlas vpn',
+    'strongvpn','vyprvpn','zenmate','browsec','urban vpn','psiphon','tor exit','anonymizer',
     'amazon','aws','amazon.com','google cloud','google llc','microsoft azure','microsoft corporation',
     'digitalocean','linode','vultr','ovh','hetzner','choopa','m247','leaseweb','contabo',
     'scaleway','oracle cloud','psychz','g-core','frantech','packet','datacamp','host europe',
-    'cloudflare','alibaba cloud','tencent cloud','upcloud','servermania','hostinger'
+    'cloudflare','alibaba cloud','tencent cloud','upcloud','servermania','hostinger','ionos',
+    'quadranet','sharktech','worldstream','flokinet','njal.la','cdn77','gcore','netcup'
   ];
 
   function logLine(text, kind){
@@ -1115,43 +1162,47 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   async function fetchWithTimeout(url, ms){
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), ms);
-    try {
-      const res = await fetch(url, { signal: ctrl.signal });
-      return res;
-    } finally {
-      clearTimeout(t);
-    }
+    try { return await fetch(url, { signal: ctrl.signal }); }
+    finally { clearTimeout(t); }
   }
 
-  async function checkPrimary(){
-    const res = await fetchWithTimeout('https://api.ipapi.is/', 7000);
-    if (!res.ok) throw new Error('primary lookup failed');
+  // Resolve the browser's actual egress IP first via a dedicated,
+  // minimal echo service, then explicitly query both intelligence
+  // sources against that exact IP — this avoids relying on either
+  // API's undocumented "auto-detect caller" behavior, which is
+  // where most false negatives were coming from.
+  async function resolveOwnIp(){
+    const res = await fetchWithTimeout('https://api.ipify.org?format=json', 6000);
+    if (!res.ok) throw new Error('ipify failed');
     const d = await res.json();
-    const flags = {
-      vpn: !!d.is_vpn,
-      proxy: !!d.is_proxy,
-      datacenter: !!d.is_datacenter,
-      tor: !!d.is_tor,
-    };
+    if (!d.ip) throw new Error('no ip returned');
+    return d.ip;
+  }
+
+  async function checkDedicated(ip){
+    const res = await fetchWithTimeout(`https://api.ipapi.is/?q=${ip}`, 8000);
+    if (!res.ok) throw new Error('ipapi.is failed: ' + res.status);
+    const d = await res.json();
+    const flags = { vpn: !!d.is_vpn, proxy: !!d.is_proxy, datacenter: !!d.is_datacenter, tor: !!d.is_tor };
     return {
-      source: 'api.ipapi.is',
-      ip: d.ip || '—',
+      source: 'api.ipapi.is (VPN exit-node DB)',
+      ip: d.ip || ip,
       org: (d.company && d.company.name) || (d.asn && (d.asn.org || d.asn.name)) || '—',
-      country: (d.location && d.location.country) || '—',
+      country: (d.location && d.location.country) || (d.datacenter && d.datacenter.country) || '—',
       flags,
       isVpn: flags.vpn || flags.proxy || flags.datacenter || flags.tor,
     };
   }
 
-  async function checkFallback(){
-    const res = await fetchWithTimeout('https://ipapi.co/json/', 7000);
-    if (!res.ok) throw new Error('fallback lookup failed');
+  async function checkKeyword(ip){
+    const res = await fetchWithTimeout(`https://ipapi.co/${ip}/json/`, 8000);
+    if (!res.ok) throw new Error('ipapi.co failed: ' + res.status);
     const d = await res.json();
     const org = (d.org || '').toLowerCase();
     const hit = VPN_HOST_KEYWORDS.find(k => org.includes(k));
     return {
-      source: 'ipapi.co (ASN keyword heuristic)',
-      ip: d.ip || '—',
+      source: 'ipapi.co (ASN keyword cross-check)',
+      ip: d.ip || ip,
       org: d.org || '—',
       country: d.country_name || '—',
       flags: { keyword_match: hit || null },
@@ -1159,35 +1210,51 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     };
   }
 
-  function renderDetail(result){
-    detailEl.innerHTML = `
-      <div><b>IP</b></div><div>${result.ip}</div>
-      <div><b>Org / ASN</b></div><div>${result.org}</div>
-      <div><b>Country</b></div><div>${result.country}</div>
-      <div><b>Source</b></div><div>${result.source}</div>
-    `;
+  function renderDetail(results){
+    detailEl.innerHTML = results.map(r => `
+      <div><b>IP</b></div><div>${r.ip}</div>
+      <div><b>Org / ASN</b></div><div>${r.org}</div>
+      <div><b>Country</b></div><div>${r.country}</div>
+      <div><b>Source</b></div><div>${r.source} — ${r.isVpn ? '<span style="color:var(--phosphor)">HIT</span>' : 'clean'}</div>
+    `).join('<div style="grid-column:1/-1;height:1px;background:var(--hair);margin:4px 0;"></div>');
   }
 
-  function pass(result){
+  function glitchText(node, finalText){
+    const chars = '!<>-_\\/[]{}—=+*^?#________';
+    let frame = 0;
+    const iv = setInterval(() => {
+      node.textContent = finalText.split('').map((c, i) => {
+        if (c === ' ') return ' ';
+        return frame > i * 1.4 ? c : chars[Math.floor(Math.random()*chars.length)];
+      }).join('');
+      frame++;
+      if (frame > finalText.length * 1.4){ clearInterval(iv); node.textContent = finalText; }
+    }, 22);
+  }
+
+  function pass(results){
     statusEl.className = 'gate-status show pass';
-    statusTitle.textContent = 'ACCESS GRANTED — VPN / PROXY DETECTED';
-    statusBody.textContent = 'Egress path looks anonymized. Opening console…';
-    renderDetail(result);
+    statusTitle.textContent = '◢◤ ACCESS GRANTED ◢◤';
+    glitchText(statusTitle, '◢◤ ACCESS GRANTED ◢◤');
+    statusBody.textContent = 'Anonymized egress confirmed. Decrypting console shell…';
+    renderDetail(results);
     actionsEl.style.display = 'none';
     setTimeout(() => {
       gateEl.classList.add('gate-hidden');
       appEl.classList.remove('app-locked');
       setTimeout(() => { gateEl.style.display = 'none'; }, 550);
-    }, 700);
+    }, 750);
   }
 
-  function fail(result, errored){
+  function fail(results, errored){
     statusEl.className = 'gate-status show fail';
-    statusTitle.textContent = errored ? 'CHECK FAILED — COULD NOT VERIFY' : 'ACCESS DENIED — OPSEC LEVEL PENETRABLE';
+    const title = errored ? 'CHECK FAILED — UNKNOWN EXPOSURE' : 'ACCESS DENIED — OPSEC LEVEL: PENETRABLE';
+    statusTitle.textContent = title;
+    glitchText(statusTitle, title);
     statusBody.textContent = errored
-      ? "Couldn't reach the IP-intelligence lookup (blocked, offline, or rate-limited). Your VPN status is unknown."
-      : 'Your egress IP does not match a known VPN, proxy, Tor, or datacenter range. Connect a VPN and re-run the scan.';
-    if (result) renderDetail(result);
+      ? "Both IP-intelligence lookups were unreachable — blocked by a privacy extension, offline, or rate-limited. Your VPN status could not be confirmed either way."
+      : 'Your egress IP matches no known VPN, proxy, Tor, or datacenter range on either database. Bare residential/ISP traffic. Light up a tunnel and re-run the scan.';
+    if (results && results.length) renderDetail(results);
     else detailEl.innerHTML = '';
     actionsEl.style.display = 'flex';
   }
@@ -1196,31 +1263,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     statusEl.className = 'gate-status';
     actionsEl.style.display = 'none';
     logEl.innerHTML = '';
-    const l1 = logLine('Resolving egress IP address…', 'pending');
-    await new Promise(r => setTimeout(r, 300));
 
-    let result = null, errored = false;
+    const l0 = logLine('Tracing egress route…', 'pending');
+    let ip;
     try {
-      result = await checkPrimary();
-      l1.className = 'gate-log-line ok';
-      const l2 = logLine('Cross-referencing VPN / proxy / datacenter registries…', 'ok');
-    } catch (e1) {
-      l1.className = 'gate-log-line ok';
-      logLine('Primary lookup unreachable — falling back to ASN heuristic…', 'pending');
-      try {
-        result = await checkFallback();
-        logLine('ASN reputation cross-check complete.', 'ok');
-      } catch (e2) {
-        logLine('Both lookups failed — network blocked or offline.', 'fail');
-        errored = true;
-      }
+      ip = await resolveOwnIp();
+      l0.className = 'gate-log-line ok';
+      logLine(`Egress IP pinned: ${ip}`, 'ok');
+    } catch (e0) {
+      l0.className = 'gate-log-line fail';
+      logLine('Could not resolve egress IP — network blocked or offline.', 'fail');
+      fail(null, true);
+      return;
     }
 
-    await new Promise(r => setTimeout(r, 250));
-    logLine('Evaluating opsec posture…', result && result.isVpn ? 'ok' : errored ? 'fail' : 'fail');
+    const l1 = logLine('Querying VPN exit-node database…', 'pending');
+    const l2 = logLine('Cross-referencing ASN / hosting registries…', 'pending');
+    await new Promise(r => setTimeout(r, 200));
 
-    if (result && result.isVpn) pass(result);
-    else fail(result, errored);
+    const settled = await Promise.allSettled([checkDedicated(ip), checkKeyword(ip)]);
+    const results = [];
+    if (settled[0].status === 'fulfilled'){ l1.className = 'gate-log-line ok'; results.push(settled[0].value); }
+    else { l1.className = 'gate-log-line fail'; l1.querySelector('span:last-child').textContent = 'VPN exit-node database unreachable.'; }
+    if (settled[1].status === 'fulfilled'){ l2.className = 'gate-log-line ok'; results.push(settled[1].value); }
+    else { l2.className = 'gate-log-line fail'; l2.querySelector('span:last-child').textContent = 'ASN registry cross-check unreachable.'; }
+
+    await new Promise(r => setTimeout(r, 200));
+    const anyHit = results.some(r => r.isVpn);
+    logLine('Evaluating opsec posture…', anyHit ? 'ok' : (results.length ? 'fail' : 'fail'));
+
+    if (results.length === 0) fail(null, true);
+    else if (anyHit) pass(results);
+    else fail(results, false);
   }
 
   retryBtn.addEventListener('click', runCheck);
@@ -2043,45 +2117,48 @@ async function streamCompletion(session){
 }
 
 /* ============================================================
-   PARTICLE BACKGROUND — lightweight drifting nodes
+   MATRIX RAIN — classic falling-code background
 ============================================================ */
-(function particles(){
+(function matrixRain(){
   const canvas = document.getElementById('particleCanvas');
   const ctx = canvas.getContext('2d');
-  let w, h, particles = [];
-  const COUNT = 46;
-  function resize(){ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-  function init(){
-    particles = Array.from({length: COUNT}, () => ({
-      x: Math.random()*w, y: Math.random()*h,
-      vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15,
-      r: Math.random()*1.6 + 0.4, hueAmber: Math.random() < 0.18,
-    }));
+  const GLYPHS = 'アカサタナハマヤラワガザダバパイキシチニヒミリヰギジヂビピウクスツヌフムユルグズヅブプエケセテネヘメレヱゲゼデベペオコソトノホモヨロヲゴゾドボポヴッン0123456789';
+  const FONT_SIZE = 15;
+  let cols, drops, w, h;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cols = Math.floor(w / FONT_SIZE);
+    drops = Array.from({length: cols}, () => Math.random() * -100);
   }
+
   function tick(){
-    ctx.clearRect(0,0,w,h);
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fillStyle = p.hueAmber ? 'rgba(255,180,84,0.55)' : 'rgba(61,255,160,0.5)';
-      ctx.fill();
-    });
-    for (let a=0; a<particles.length; a++){
-      for (let b=a+1; b<particles.length; b++){
-        const dx = particles[a].x - particles[b].x, dy = particles[a].y - particles[b].y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 110){
-          ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y);
-          ctx.strokeStyle = `rgba(61,255,160,${0.08 * (1 - dist/110)})`; ctx.lineWidth = 1; ctx.stroke();
-        }
-      }
+    // fading trail: translucent black wash instead of a full clear
+    ctx.fillStyle = 'rgba(6,9,7,0.08)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.font = FONT_SIZE + 'px "IBM Plex Mono", monospace';
+    for (let i = 0; i < cols; i++){
+      const glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      const x = i * FONT_SIZE;
+      const y = drops[i] * FONT_SIZE;
+
+      // leading character brighter/whiter, trail phosphor green,
+      // rare amber glyph for the accent color
+      const roll = Math.random();
+      ctx.fillStyle = roll < 0.02 ? '#eaf7ef' : roll < 0.05 ? 'rgba(255,180,84,0.75)' : 'rgba(61,255,160,0.55)';
+      ctx.fillText(glyph, x, y);
+
+      if (y > h && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
     }
     requestAnimationFrame(tick);
   }
+
   window.addEventListener('resize', resize);
-  resize(); init(); tick();
+  resize();
+  tick();
 })();
 
 /* ============================================================
