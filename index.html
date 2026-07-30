@@ -593,6 +593,9 @@ select#sidebarModel:focus{ border-color: var(--phosphor-dim); }
 .toggle.amber.on .switch{ background: rgba(255,180,84,0.35); }
 .toggle.amber.on .switch::after{ background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
 .toggle.amber.on{ color: var(--text-hi); }
+.toggle.blue.on{ color: var(--text-hi); border-color: var(--hair-strong); }
+.toggle.blue.on .switch{ background: rgba(111,216,255,0.3); }
+.toggle.blue.on .switch::after{ background: #6fd8ff; box-shadow: 0 0 6px rgba(111,216,255,.6); }
 
 .tool-live{
   margin-left: auto; display:flex; align-items:center; gap:6px;
@@ -653,6 +656,162 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
 }
 .token-readout{ font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); }
 .token-readout b{ color: var(--text-mute); font-weight: 500; }
+
+/* ============================================================
+   CONNECTION CARD STATES
+============================================================ */
+.operator{ cursor: pointer; }
+.operator-avatar.connected{ color: var(--phosphor); border-color: rgba(61,255,160,0.4); }
+.operator-avatar.error{ color: var(--danger); border-color: rgba(255,92,92,0.4); }
+.operator-clearance.connected{ color: var(--phosphor); }
+.operator-clearance.error{ color: var(--danger); }
+
+/* ============================================================
+   MODAL — API key entry / session naming
+============================================================ */
+.modal-scrim{
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(3,5,4,0.72); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s var(--ease);
+  padding: 20px;
+}
+.modal-scrim.open{ opacity: 1; pointer-events: all; }
+.modal{
+  width: 100%; max-width: 400px;
+  background: linear-gradient(180deg, rgba(18,26,22,0.96), rgba(10,15,12,0.98));
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-lg);
+  padding: 22px 22px 18px;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.7), 0 0 40px -10px var(--phosphor-glow);
+  transform: translateY(14px) scale(.97); opacity: 0;
+  transition: transform .3s var(--ease), opacity .3s var(--ease);
+}
+.modal-scrim.open .modal{ transform: translateY(0) scale(1); opacity: 1; }
+.modal-head{ display:flex; align-items:center; gap: 10px; margin-bottom: 8px; }
+.modal-glyph{ font-family: var(--font-display); color: var(--phosphor); font-size: 15px; }
+.modal-head h3{ margin:0; font-family: var(--font-display); font-size: 15px; color: var(--text-hi); font-weight: 700; }
+.modal-copy{ font-size: 12.5px; color: var(--text-mute); line-height: 1.6; margin: 0 0 14px; }
+.modal-input{
+  width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm); padding: 10px 12px; color: var(--text-hi);
+  font-family: var(--font-mono); font-size: 12.5px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.modal-input:focus{ border-color: var(--phosphor-dim); box-shadow: 0 0 0 3px rgba(61,255,160,0.1); }
+.modal-error{
+  font-family: var(--font-mono); font-size: 11px; color: var(--danger); min-height: 15px; margin-top: 8px;
+}
+.modal-actions{ display:flex; justify-content:flex-end; gap: 8px; margin-top: 14px; }
+.modal-btn{
+  font-family: var(--font-mono); font-size: 11.5px; padding: 8px 14px; border-radius: var(--r-sm);
+  cursor: pointer; border: 1px solid var(--hair-strong); background: rgba(255,255,255,0.03); color: var(--text);
+  transition: all .2s var(--ease);
+}
+.modal-btn:hover{ border-color: var(--hair-strong); background: rgba(255,255,255,0.06); }
+.modal-btn.primary{ background: linear-gradient(150deg, var(--phosphor), #1fae6e); color: #06120c; border: none; font-weight: 600; }
+.modal-btn.primary:hover{ filter: brightness(1.08); }
+.modal-btn.primary:disabled{ opacity: .5; cursor: not-allowed; filter:none; }
+.modal-btn.secondary{ color: var(--danger); border-color: rgba(255,92,92,0.3); }
+.modal-btn.ghost{ background: none; }
+.modal-hint{ margin-top: 14px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-align:center; }
+.modal-hint a{ color: var(--phosphor); text-decoration: none; }
+.modal-hint a:hover{ text-decoration: underline; }
+
+/* ============================================================
+   API ERROR / SYSTEM MESSAGE BUBBLE
+============================================================ */
+.msg.system .bubble{
+  background: rgba(255,92,92,0.06); border-color: rgba(255,92,92,0.25); color: #ffb3b3;
+  font-family: var(--font-mono); font-size: 12.5px;
+}
+.msg.system .msg-avatar{ background: rgba(255,92,92,0.1); border-color: rgba(255,92,92,0.3); color: var(--danger); }
+
+/* citation / search result footer on a message */
+.citations{ margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--hair); display:flex; flex-wrap:wrap; gap:6px; }
+.citation-chip{
+  font-family: var(--font-mono); font-size: 10px; color: #6fd8ff;
+  background: rgba(111,216,255,0.06); border: 1px solid rgba(111,216,255,0.2);
+  padding: 3px 8px; border-radius: 6px; text-decoration: none; max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display:inline-block;
+}
+.citation-chip:hover{ border-color: rgba(111,216,255,0.5); }
+.usage-line{
+  margin-top: 6px; font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim);
+}
+.attach-chip.image-chip{ padding: 3px; }
+.attach-chip.image-chip img{ width: 26px; height: 26px; border-radius: 5px; object-fit: cover; display:block; }
+
+/* ============================================================
+   OPSEC GATE — perimeter check overlay, shown before the app
+============================================================ */
+#opsecGate{
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--void);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  transition: opacity .5s var(--ease);
+}
+#opsecGate.gate-hidden{ opacity: 0; pointer-events: none; }
+.gate-panel{
+  width: 100%; max-width: 480px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(14,20,17,0.75), rgba(8,12,10,0.9));
+  backdrop-filter: blur(16px);
+  padding: 26px 26px 22px;
+  box-shadow: 0 30px 90px -20px rgba(0,0,0,0.8);
+}
+.gate-head{ display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
+.gate-head svg{ color: var(--phosphor); flex-shrink:0; }
+.gate-head h2{ margin:0; font-family: var(--font-display); font-size: 15px; color: var(--text-hi); letter-spacing: .5px; }
+.gate-sub{ font-family: var(--font-mono); font-size: 10.5px; color: var(--text-mute); margin: 0 0 18px; letter-spacing: .5px; }
+.gate-log{
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.9; color: var(--text-mute);
+  min-height: 96px; margin-bottom: 16px;
+}
+.gate-log-line{ display:flex; align-items:center; gap: 8px; opacity: 0; animation: msg-in .35s var(--ease) forwards; }
+.gate-log-line .gl-icon{ width: 12px; flex-shrink:0; text-align:center; }
+.gate-log-line.ok .gl-icon{ color: var(--phosphor); }
+.gate-log-line.pending .gl-icon{ color: var(--text-dim); }
+.gate-log-line.fail .gl-icon{ color: var(--danger); }
+.gate-status{
+  border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 14px;
+  font-family: var(--font-mono); border: 1px solid var(--hair-strong);
+  display: none;
+}
+.gate-status.show{ display: block; animation: msg-in .4s var(--ease) both; }
+.gate-status.pass{ background: rgba(61,255,160,0.07); border-color: rgba(61,255,160,0.3); }
+.gate-status.fail{ background: rgba(255,92,92,0.07); border-color: rgba(255,92,92,0.3); }
+.gate-status-title{ font-size: 13px; font-weight: 700; letter-spacing: .5px; margin-bottom: 6px; }
+.gate-status.pass .gate-status-title{ color: var(--phosphor); }
+.gate-status.fail .gate-status-title{ color: var(--danger); }
+.gate-status-body{ font-size: 11px; color: var(--text-mute); line-height: 1.6; }
+.gate-detail{
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--hair);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
+  font-size: 10px; color: var(--text-dim);
+}
+.gate-detail b{ color: var(--text-mute); font-weight: 500; }
+.gate-actions{ display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-top: 4px; }
+.gate-retry{
+  font-family: var(--font-mono); font-size: 11.5px; padding: 9px 16px; border-radius: var(--r-sm);
+  background: linear-gradient(150deg, var(--phosphor), #1fae6e); color: #06120c; border: none; font-weight: 600;
+  cursor: pointer; transition: filter .2s;
+}
+.gate-retry:hover{ filter: brightness(1.08); }
+.gate-override{
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); background:none; border:none;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.gate-override:hover{ color: var(--text-mute); }
+.gate-caveat{
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair);
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--text-dim); line-height: 1.6;
+}
+#app{ transition: opacity .4s var(--ease); }
+#app.app-locked{ opacity: 0; pointer-events: none; }
 
 /* ============================================================
    RESPONSIVE
@@ -724,13 +883,43 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 </head>
 <body>
 
+<!-- ============ OPSEC GATE — VPN/proxy perimeter check ============ -->
+<div id="opsecGate">
+  <div class="gate-panel">
+    <div class="gate-head">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>
+      <h2>PERIMETER CHECK</h2>
+    </div>
+    <div class="gate-sub">MAINFRAME/OPSEC · verifying egress path before granting console access</div>
+
+    <div class="gate-log" id="gateLog"></div>
+
+    <div class="gate-status" id="gateStatus">
+      <div class="gate-status-title" id="gateStatusTitle"></div>
+      <div class="gate-status-body" id="gateStatusBody"></div>
+      <div class="gate-detail" id="gateDetail"></div>
+    </div>
+
+    <div class="gate-actions" id="gateActions" style="display:none;">
+      <button class="gate-retry" id="gateRetry">Re-run Scan</button>
+      <button class="gate-override" id="gateOverride">Proceed without VPN →</button>
+    </div>
+
+    <div class="gate-caveat">
+      This check looks up your egress IP's ASN/hosting reputation via a public IP-intelligence
+      API — it's a best-effort heuristic, not a cryptographic guarantee, and can be bypassed
+      by anyone with dev tools open. Treat it as a themed reminder, not real access control.
+    </div>
+  </div>
+</div>
+
 <!-- ============ BACKGROUND ATMOSPHERE ============ -->
 <div class="atmosphere"></div>
 <canvas id="particleCanvas"></canvas>
 <div class="scanlines"></div>
 <div class="vignette"></div>
 
-<div class="app" id="app">
+<div class="app app-locked" id="app">
 
   <div class="sidebar-scrim" id="sidebarScrim"></div>
 
@@ -757,23 +946,39 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <div class="model-select-wrap">
         <div class="field-label">Active Model</div>
         <select id="sidebarModel">
-          <option value="deepseek/deepseek-v3.1-terminus" selected>DeepSeek V3.1 Terminus</option>
-          <option value="qwen/qwen3-235b-a22b-2507">Qwen3 235B A22B</option>
-          <option value="qwen/qwen3-235b-thinking">Qwen3 235B Thinking</option>
-          <option value="inclusionai/ling-1t">Ling-1T</option>
-          <option value="inclusionai/ring-1t">Ring-1T</option>
-          <option value="moonshotai/kimi-k2">Kimi K2-0905</option>
+          <option value="">Add API key to load models…</option>
         </select>
       </div>
-      <div class="operator" id="operatorArea">
-        <div class="operator-avatar">OP</div>
+      <div class="operator" id="connectionCard" tabindex="0" role="button" aria-label="Manage OpenRouter API key">
+        <div class="operator-avatar" id="connectionAvatar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5l11 11M14 4l-2 2m8 2l-2 2M6 16l-2 2m6-12L4 12l8 8 6-6-8-8z"/></svg>
+        </div>
         <div>
-          <div class="operator-name">Operator // Local</div>
-          <div class="operator-clearance">CLEARANCE: ALPHA</div>
+          <div class="operator-name" id="connectionTitle">No API Key</div>
+          <div class="operator-clearance" id="connectionSub">Click to connect OpenRouter</div>
         </div>
       </div>
     </div>
   </aside>
+
+  <!-- ============ API KEY / SESSION-NAME MODAL ============ -->
+  <div class="modal-scrim" id="modalScrim">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <span class="modal-glyph" id="modalGlyph">&gt;_</span>
+        <h3 id="modalTitle">Connect OpenRouter</h3>
+      </div>
+      <p class="modal-copy" id="modalCopy">Paste your OpenRouter API key. It's stored only in this browser and sent directly to openrouter.ai — never through a third-party server.</p>
+      <input type="text" class="modal-input" id="modalInput" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false">
+      <div class="modal-error" id="modalError"></div>
+      <div class="modal-actions">
+        <button class="modal-btn ghost" id="modalCancel">Cancel</button>
+        <button class="modal-btn secondary" id="modalSecondary" style="display:none;">Clear Key</button>
+        <button class="modal-btn primary" id="modalConfirm">Connect</button>
+      </div>
+      <div class="modal-hint">Don't have a key? <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get one at openrouter.ai/keys</a></div>
+    </div>
+  </div>
 
   <!-- ============ MAIN ============ -->
   <main class="main">
@@ -831,14 +1036,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <div class="composer" id="composer">
 
         <div class="composer-toprow">
-          <div class="chip model-chip"><span class="dot"></span> DeepSeek V3.1 Terminus</div>
-          <div class="toggle" id="reasoningToggle" tabindex="0" role="switch" aria-checked="false">
-            <span class="switch"></span><span class="toggle-label">Reasoning Mode</span>
+          <div class="chip model-chip" id="modelChip"><span class="dot"></span> <span id="modelChipLabel">No model selected</span></div>
+          <div class="toggle" id="reasoningToggle" tabindex="0" role="switch" aria-checked="false" title="Adds reasoning:{enabled:true} to the request">
+            <span class="switch"></span><span class="toggle-label">Reasoning</span>
           </div>
-          <div class="toggle amber on" id="fastToggle" tabindex="0" role="switch" aria-checked="true">
+          <div class="toggle amber on" id="fastToggle" tabindex="0" role="switch" aria-checked="true" title="Routes via provider.sort:throughput">
             <span class="switch"></span><span class="toggle-label">Fast Mode</span>
           </div>
-          <div class="tool-live" id="toolLive"><span class="pip"></span> Tools idle</div>
+          <div class="toggle blue" id="webSearchToggle" tabindex="0" role="switch" aria-checked="false" title="Adds the openrouter:web_search server tool">
+            <span class="switch"></span><span class="toggle-label">Web Search</span>
+          </div>
+          <div class="tool-live" id="toolLive"><span class="pip"></span> Idle</div>
         </div>
 
         <div class="attach-row" id="attachRow"></div>
@@ -865,17 +1073,197 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 <script>
 /* ============================================================
+   OPSEC GATE — best-effort client-side VPN/proxy detection.
+   This is a heuristic IP-reputation lookup, not real access
+   control: anyone can bypass it via devtools. It exists as a
+   themed gate, not a security boundary.
+============================================================ */
+(function opsecGate(){
+  const gateEl = document.getElementById('opsecGate');
+  const logEl = document.getElementById('gateLog');
+  const statusEl = document.getElementById('gateStatus');
+  const statusTitle = document.getElementById('gateStatusTitle');
+  const statusBody = document.getElementById('gateStatusBody');
+  const detailEl = document.getElementById('gateDetail');
+  const actionsEl = document.getElementById('gateActions');
+  const retryBtn = document.getElementById('gateRetry');
+  const overrideBtn = document.getElementById('gateOverride');
+  const appEl = document.getElementById('app');
+
+  // Providers whose org/ASN name commonly shows up on VPN exit nodes or
+  // datacenter/hosting ranges — used as a fallback heuristic if the
+  // primary IP-intelligence lookup is unavailable.
+  const VPN_HOST_KEYWORDS = [
+    'vpn','nordvpn','nord security','expressvpn','surfshark','mullvad','proton','protonvpn',
+    'private internet access','pia ','cyberghost','windscribe','ipvanish','hotspot shield',
+    'tunnelbear','hide.me','purevpn','ivpn','perfect privacy','airvpn','torguard',
+    'amazon','aws','amazon.com','google cloud','google llc','microsoft azure','microsoft corporation',
+    'digitalocean','linode','vultr','ovh','hetzner','choopa','m247','leaseweb','contabo',
+    'scaleway','oracle cloud','psychz','g-core','frantech','packet','datacamp','host europe',
+    'cloudflare','alibaba cloud','tencent cloud','upcloud','servermania','hostinger'
+  ];
+
+  function logLine(text, kind){
+    const row = document.createElement('div');
+    row.className = 'gate-log-line ' + kind;
+    const icon = kind === 'ok' ? '✓' : kind === 'fail' ? '✗' : '›';
+    row.innerHTML = `<span class="gl-icon">${icon}</span><span>${text}</span>`;
+    logEl.appendChild(row);
+    return row;
+  }
+
+  async function fetchWithTimeout(url, ms){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      return res;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  async function checkPrimary(){
+    const res = await fetchWithTimeout('https://api.ipapi.is/', 7000);
+    if (!res.ok) throw new Error('primary lookup failed');
+    const d = await res.json();
+    const flags = {
+      vpn: !!d.is_vpn,
+      proxy: !!d.is_proxy,
+      datacenter: !!d.is_datacenter,
+      tor: !!d.is_tor,
+    };
+    return {
+      source: 'api.ipapi.is',
+      ip: d.ip || '—',
+      org: (d.company && d.company.name) || (d.asn && (d.asn.org || d.asn.name)) || '—',
+      country: (d.location && d.location.country) || '—',
+      flags,
+      isVpn: flags.vpn || flags.proxy || flags.datacenter || flags.tor,
+    };
+  }
+
+  async function checkFallback(){
+    const res = await fetchWithTimeout('https://ipapi.co/json/', 7000);
+    if (!res.ok) throw new Error('fallback lookup failed');
+    const d = await res.json();
+    const org = (d.org || '').toLowerCase();
+    const hit = VPN_HOST_KEYWORDS.find(k => org.includes(k));
+    return {
+      source: 'ipapi.co (ASN keyword heuristic)',
+      ip: d.ip || '—',
+      org: d.org || '—',
+      country: d.country_name || '—',
+      flags: { keyword_match: hit || null },
+      isVpn: !!hit,
+    };
+  }
+
+  function renderDetail(result){
+    detailEl.innerHTML = `
+      <div><b>IP</b></div><div>${result.ip}</div>
+      <div><b>Org / ASN</b></div><div>${result.org}</div>
+      <div><b>Country</b></div><div>${result.country}</div>
+      <div><b>Source</b></div><div>${result.source}</div>
+    `;
+  }
+
+  function pass(result){
+    statusEl.className = 'gate-status show pass';
+    statusTitle.textContent = 'ACCESS GRANTED — VPN / PROXY DETECTED';
+    statusBody.textContent = 'Egress path looks anonymized. Opening console…';
+    renderDetail(result);
+    actionsEl.style.display = 'none';
+    setTimeout(() => {
+      gateEl.classList.add('gate-hidden');
+      appEl.classList.remove('app-locked');
+      setTimeout(() => { gateEl.style.display = 'none'; }, 550);
+    }, 700);
+  }
+
+  function fail(result, errored){
+    statusEl.className = 'gate-status show fail';
+    statusTitle.textContent = errored ? 'CHECK FAILED — COULD NOT VERIFY' : 'ACCESS DENIED — OPSEC LEVEL PENETRABLE';
+    statusBody.textContent = errored
+      ? "Couldn't reach the IP-intelligence lookup (blocked, offline, or rate-limited). Your VPN status is unknown."
+      : 'Your egress IP does not match a known VPN, proxy, Tor, or datacenter range. Connect a VPN and re-run the scan.';
+    if (result) renderDetail(result);
+    else detailEl.innerHTML = '';
+    actionsEl.style.display = 'flex';
+  }
+
+  async function runCheck(){
+    statusEl.className = 'gate-status';
+    actionsEl.style.display = 'none';
+    logEl.innerHTML = '';
+    const l1 = logLine('Resolving egress IP address…', 'pending');
+    await new Promise(r => setTimeout(r, 300));
+
+    let result = null, errored = false;
+    try {
+      result = await checkPrimary();
+      l1.className = 'gate-log-line ok';
+      const l2 = logLine('Cross-referencing VPN / proxy / datacenter registries…', 'ok');
+    } catch (e1) {
+      l1.className = 'gate-log-line ok';
+      logLine('Primary lookup unreachable — falling back to ASN heuristic…', 'pending');
+      try {
+        result = await checkFallback();
+        logLine('ASN reputation cross-check complete.', 'ok');
+      } catch (e2) {
+        logLine('Both lookups failed — network blocked or offline.', 'fail');
+        errored = true;
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 250));
+    logLine('Evaluating opsec posture…', result && result.isVpn ? 'ok' : errored ? 'fail' : 'fail');
+
+    if (result && result.isVpn) pass(result);
+    else fail(result, errored);
+  }
+
+  retryBtn.addEventListener('click', runCheck);
+  overrideBtn.addEventListener('click', () => {
+    gateEl.classList.add('gate-hidden');
+    appEl.classList.remove('app-locked');
+    setTimeout(() => { gateEl.style.display = 'none'; }, 550);
+  });
+
+  runCheck();
+})();
+
+
+/* ============================================================
    STATE
 ============================================================ */
+const OR_BASE = 'https://openrouter.ai/api/v1';
+const KEY_STORAGE = 'mainframeopsec_or_key';
+
+const CURATED_MODEL_IDS = [
+  'deepseek/deepseek-v3.1-terminus',
+  'qwen/qwen3-235b-a22b-2507',
+  'qwen/qwen3-235b-a22b-thinking-2507',
+  'inclusionai/ling-1t',
+  'inclusionai/ring-1t',
+  'moonshotai/kimi-k2-0905',
+];
+
 const state = {
   sidebarOpen: window.innerWidth > 900,
   reasoningMode: false,
   fastMode: true,
-  sessions: [],
+  webSearch: false,
+  apiKey: localStorage.getItem(KEY_STORAGE) || '',
+  keyInfo: null,          // { label, limit_remaining, usage, ... } from GET /key
+  models: new Map(),      // id -> { id, name, context_length }
+  selectedModelId: '',
+  sessions: [],           // { id, title, messages: [{role, content}], createdAt }
   activeSessionId: null,
-  attachments: [],
-  ctxUsed: 0,
-  ctxMax: 128000,
+  attachments: [],        // { name, kind: 'text'|'image', content|dataUrl }
+  ctxMax: 0,
+  modalMode: null,        // 'apikey' | 'newsession' | 'addmodel'
+  inFlight: false,
 };
 
 const el = {
@@ -893,6 +1281,7 @@ const el = {
   composer: document.getElementById('composer'),
   reasoningToggle: document.getElementById('reasoningToggle'),
   fastToggle: document.getElementById('fastToggle'),
+  webSearchToggle: document.getElementById('webSearchToggle'),
   toolLive: document.getElementById('toolLive'),
   attachBtn: document.getElementById('attachBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -902,74 +1291,276 @@ const el = {
   ctxFill: document.getElementById('ctxFill'),
   activeSessionTitle: document.getElementById('activeSessionTitle'),
   sidebarModel: document.getElementById('sidebarModel'),
+  modelChip: document.getElementById('modelChip'),
+  modelChipLabel: document.getElementById('modelChipLabel'),
+  topbarSub: document.querySelector('.topbar-sub'),
+  connectionCard: document.getElementById('connectionCard'),
+  connectionAvatar: document.getElementById('connectionAvatar'),
+  connectionTitle: document.getElementById('connectionTitle'),
+  connectionSub: document.getElementById('connectionSub'),
+  modalScrim: document.getElementById('modalScrim'),
+  modalGlyph: document.getElementById('modalGlyph'),
+  modalTitle: document.getElementById('modalTitle'),
+  modalCopy: document.getElementById('modalCopy'),
+  modalInput: document.getElementById('modalInput'),
+  modalError: document.getElementById('modalError'),
+  modalCancel: document.getElementById('modalCancel'),
+  modalSecondary: document.getElementById('modalSecondary'),
+  modalConfirm: document.getElementById('modalConfirm'),
 };
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function formatCtx(n){
+  if (!n && n !== 0) return '—';
+  if (n >= 1000000) return (n/1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+  if (n >= 1000) return Math.round(n/1000) + 'K';
+  return String(n);
+}
+function nowTime(){ return new Date().toTimeString().slice(0,8); }
+function randomHash(){ return Array.from({length:6}, () => Math.floor(Math.random()*16).toString(16)).join(''); }
+
 /* ============================================================
-   MOCK SESSION LOGS
+   MODAL — shared dialog for API key / new session / add model
 ============================================================ */
-function seedSessions(){
-  const seed = [
-    { title: 'Kernel Patch Review', tag: 'active', ago: '2m ago' },
-    { title: 'Firewall Ruleset Audit', tag: 'active', ago: '41m ago' },
-    { title: 'Credential Leak — IR Draft', tag: 'archived', ago: '3h ago' },
-    { title: 'Legacy COBOL Migration Notes', tag: 'archived', ago: '1d ago' },
-    { title: 'Zero-Trust Segmentation Plan', tag: 'archived', ago: '2d ago' },
-  ];
-  seed.forEach((s, i) => {
-    state.sessions.push({
-      id: 'sess-' + (1000 + i),
-      code: 'SESS-04' + (17 - i),
-      title: s.title,
-      tag: s.tag,
-      ago: s.ago,
-      messages: [],
+function openModal(mode){
+  state.modalMode = mode;
+  el.modalError.textContent = '';
+  el.modalInput.value = '';
+  el.modalSecondary.style.display = 'none';
+
+  if (mode === 'apikey'){
+    el.modalGlyph.textContent = '>_';
+    el.modalTitle.textContent = state.apiKey ? 'Connection' : 'Connect OpenRouter';
+    el.modalCopy.textContent = "Paste your OpenRouter API key. It's stored only in this browser (localStorage) and sent directly to openrouter.ai — never through any third-party server.";
+    el.modalInput.placeholder = 'sk-or-v1-...';
+    el.modalInput.type = 'password';
+    el.modalConfirm.textContent = 'Connect';
+    if (state.apiKey){
+      el.modalInput.value = state.apiKey;
+      el.modalSecondary.style.display = 'inline-block';
+    }
+  } else if (mode === 'newsession'){
+    el.modalGlyph.textContent = '+';
+    el.modalTitle.textContent = 'Name New Session';
+    el.modalCopy.textContent = 'Give this session log a name. You can leave it blank and it will be named after your first message.';
+    el.modalInput.placeholder = 'e.g. Firewall Audit';
+    el.modalInput.type = 'text';
+    el.modalConfirm.textContent = 'Create Session';
+  } else if (mode === 'addmodel'){
+    el.modalGlyph.textContent = '#';
+    el.modalTitle.textContent = 'Add Model';
+    el.modalCopy.textContent = 'Paste any OpenRouter model slug (e.g. anthropic/claude-sonnet-4.6). Browse the full catalog at openrouter.ai/models.';
+    el.modalInput.placeholder = 'provider/model-slug';
+    el.modalInput.type = 'text';
+    el.modalConfirm.textContent = 'Add Model';
+  }
+
+  el.modalScrim.classList.add('open');
+  setTimeout(() => el.modalInput.focus(), 50);
+}
+function closeModal(){
+  el.modalScrim.classList.remove('open');
+  state.modalMode = null;
+  if (el.sidebarModel.value === '__add__') el.sidebarModel.value = state.selectedModelId || '';
+}
+el.modalCancel.addEventListener('click', closeModal);
+el.modalScrim.addEventListener('click', e => { if (e.target === el.modalScrim) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && el.modalScrim.classList.contains('open')) closeModal();
+});
+el.modalInput.addEventListener('keydown', e => { if (e.key === 'Enter') el.modalConfirm.click(); });
+
+el.modalConfirm.addEventListener('click', async () => {
+  const val = el.modalInput.value.trim();
+  if (state.modalMode === 'apikey'){
+    if (!val){ el.modalError.textContent = 'Enter a key, or Cancel.'; return; }
+    el.modalConfirm.disabled = true;
+    el.modalConfirm.textContent = 'Connecting…';
+    const ok = await connectApiKey(val);
+    el.modalConfirm.disabled = false;
+    el.modalConfirm.textContent = 'Connect';
+    if (ok) closeModal();
+  } else if (state.modalMode === 'newsession'){
+    createSession(val || null);
+    closeModal();
+  } else if (state.modalMode === 'addmodel'){
+    if (!val){ el.modalError.textContent = 'Enter a model slug, or Cancel.'; return; }
+    addCustomModel(val);
+    closeModal();
+  }
+});
+el.modalSecondary.addEventListener('click', () => {
+  clearApiKey();
+  closeModal();
+});
+el.connectionCard.addEventListener('click', () => openModal('apikey'));
+el.connectionCard.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal('apikey'); } });
+
+/* ============================================================
+   API KEY / CONNECTION
+============================================================ */
+function renderConnection(){
+  if (!state.apiKey){
+    el.connectionAvatar.className = 'operator-avatar';
+    el.connectionTitle.textContent = 'No API Key';
+    el.connectionSub.className = 'operator-clearance';
+    el.connectionSub.textContent = 'Click to connect OpenRouter';
+    return;
+  }
+  if (state.keyInfo){
+    const remaining = state.keyInfo.limit_remaining;
+    el.connectionAvatar.className = 'operator-avatar connected';
+    el.connectionTitle.textContent = state.keyInfo.label || 'OpenRouter Key';
+    el.connectionSub.className = 'operator-clearance connected';
+    el.connectionSub.textContent = (remaining == null) ? 'Connected · unlimited' : `Connected · $${Number(remaining).toFixed(2)} left`;
+  } else {
+    el.connectionAvatar.className = 'operator-avatar error';
+    el.connectionTitle.textContent = 'Key Error';
+    el.connectionSub.className = 'operator-clearance error';
+    el.connectionSub.textContent = 'Click to reconnect';
+  }
+}
+
+async function connectApiKey(key){
+  try {
+    const res = await fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${key}` } });
+    if (!res.ok){
+      const body = await res.json().catch(() => ({}));
+      el.modalError.textContent = body?.error?.message || `Key check failed (HTTP ${res.status}).`;
+      return false;
+    }
+    const data = await res.json();
+    state.apiKey = key;
+    state.keyInfo = data.data || null;
+    localStorage.setItem(KEY_STORAGE, key);
+    renderConnection();
+    await fetchModels();
+    return true;
+  } catch (e) {
+    el.modalError.textContent = 'Network error reaching openrouter.ai — check your connection.';
+    return false;
+  }
+}
+
+function clearApiKey(){
+  state.apiKey = '';
+  state.keyInfo = null;
+  localStorage.removeItem(KEY_STORAGE);
+  renderConnection();
+  el.sidebarModel.innerHTML = '<option value="">Add API key to load models…</option>';
+  state.models.clear();
+  state.selectedModelId = '';
+  el.modelChipLabel.textContent = 'No model selected';
+  state.ctxMax = 0;
+  el.tokenMeter.textContent = '0 / —';
+  el.ctxFill.style.width = '0%';
+}
+
+/* ============================================================
+   MODELS — GET /models, populate dropdown with real slugs
+============================================================ */
+function stripVariant(id){
+  return id.replace(/:(online|nitro|floor)$/,'');
+}
+
+async function fetchModels(){
+  el.sidebarModel.innerHTML = '<option value="">Loading models…</option>';
+  try {
+    const res = await fetch(`${OR_BASE}/models`, {
+      headers: state.apiKey ? { Authorization: `Bearer ${state.apiKey}` } : {},
     });
+    if (!res.ok) throw new Error('models fetch failed: ' + res.status);
+    const data = await res.json();
+    state.models.clear();
+    (data.data || []).forEach(m => state.models.set(m.id, {
+      id: m.id, name: m.name || m.id, context_length: m.context_length || null,
+    }));
+    populateModelSelect();
+  } catch (e) {
+    el.sidebarModel.innerHTML = '<option value="">Failed to load models — retry via API key menu</option>';
+  }
+}
+
+function populateModelSelect(){
+  el.sidebarModel.innerHTML = '';
+  const curated = CURATED_MODEL_IDS.filter(id => state.models.has(id));
+  curated.forEach(id => {
+    const m = state.models.get(id);
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = `${m.name} — ${formatCtx(m.context_length)}`;
+    el.sidebarModel.appendChild(opt);
   });
+  if (state.selectedModelId && !curated.includes(state.selectedModelId) && state.models.has(state.selectedModelId)){
+    const m = state.models.get(state.selectedModelId);
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.name} — ${formatCtx(m.context_length)}`;
+    el.sidebarModel.appendChild(opt);
+  }
+  const addOpt = document.createElement('option');
+  addOpt.value = '__add__';
+  addOpt.textContent = '+ Add Model';
+  addOpt.className = 'add-model-option';
+  el.sidebarModel.appendChild(addOpt);
+
+  const initial = curated[0] || (el.sidebarModel.options.length > 1 ? el.sidebarModel.options[0].value : '');
+  if (initial && initial !== '__add__'){
+    el.sidebarModel.value = initial;
+    selectModel(initial);
+  }
 }
 
-function createSession(){
-  const id = 'sess-' + Date.now();
-  const code = 'SESS-' + Math.floor(4000 + Math.random()*900);
-  const session = { id, code, title: 'New Session', tag: 'active', ago: 'now', messages: [] };
-  state.sessions.unshift(session);
-  setActiveSession(id);
-  renderSessionList();
+function addCustomModel(rawId){
+  const id = rawId.trim();
+  const known = state.models.get(id) || state.models.get(stripVariant(id));
+  const opt = document.createElement('option');
+  opt.value = id;
+  opt.textContent = known ? `${known.name} — ${formatCtx(known.context_length)}` : `${id} — —`;
+  el.sidebarModel.insertBefore(opt, el.sidebarModel.querySelector('.add-model-option'));
+  if (!state.models.has(id)) {
+    state.models.set(id, { id, name: id, context_length: known ? known.context_length : null });
+  }
+  el.sidebarModel.value = id;
+  selectModel(id);
 }
 
-function setActiveSession(id){
-  state.activeSessionId = id;
-  const s = state.sessions.find(x => x.id === id);
-  el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
-  renderSessionList();
-  renderMessages();
-  if (window.innerWidth <= 900) closeSidebarOverlay();
+function selectModel(id){
+  state.selectedModelId = id;
+  const m = state.models.get(id) || state.models.get(stripVariant(id));
+  const label = m ? m.name : id;
+  el.modelChipLabel.textContent = label;
+  el.topbarSub.textContent = `openrouter.ai/api/v1 · ${label}`;
+  state.ctxMax = m ? (m.context_length || 0) : 0;
+  el.tokenMeter.textContent = `0 / ${formatCtx(state.ctxMax)}`;
+  el.ctxFill.style.width = '0%';
+  const s = currentSession();
+  if (s) el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
 }
 
-function renderSessionList(filter=''){
-  el.sessionList.innerHTML = '';
-  state.sessions
-    .filter(s => s.title.toLowerCase().includes(filter.toLowerCase()))
-    .forEach(s => {
-      const item = document.createElement('div');
-      item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
-      item.tabIndex = 0;
-      item.innerHTML = `
-        <div class="session-dot"></div>
-        <div class="session-meta">
-          <div class="session-title">${escapeHtml(s.title)}</div>
-          <div class="session-sub">
-            <span>${s.code}</span>
-            <span class="tag ${s.tag}">${s.tag}</span>
-            <span>${s.ago}</span>
-          </div>
-        </div>`;
-      item.addEventListener('click', () => setActiveSession(s.id));
-      el.sessionList.appendChild(item);
-    });
-}
+el.sidebarModel.addEventListener('change', () => {
+  const val = el.sidebarModel.value;
+  if (val === '__add__'){ openModal('addmodel'); return; }
+  if (val) selectModel(val);
+});
 
-el.sessionSearch.addEventListener('input', e => renderSessionList(e.target.value));
-el.newSessionBtn.addEventListener('click', createSession);
+/* ============================================================
+   TOGGLES — reasoning / fast mode / web search (all real params)
+============================================================ */
+function bindToggle(node, key){
+  const activate = () => {
+    state[key] = !state[key];
+    node.classList.toggle('on', state[key]);
+    node.setAttribute('aria-checked', String(state[key]));
+  };
+  node.addEventListener('click', activate);
+  node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+}
+bindToggle(el.reasoningToggle, 'reasoningMode');
+bindToggle(el.fastToggle, 'fastMode');
+bindToggle(el.webSearchToggle, 'webSearch');
 
 /* ============================================================
    SIDEBAR TOGGLE
@@ -990,72 +1581,116 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.inn
 window.addEventListener('resize', updateSidebarClass);
 
 /* ============================================================
-   TOGGLES (reasoning / fast mode)
+   SESSIONS — real, empty until created; each holds a real
+   OpenAI-format messages[] array sent in full on every request
 ============================================================ */
-function bindToggle(node, key, onChange){
-  const activate = () => {
-    state[key] = !state[key];
-    node.classList.toggle('on', state[key]);
-    node.setAttribute('aria-checked', String(state[key]));
-    if (onChange) onChange();
-  };
-  node.addEventListener('click', activate);
-  node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+function createSession(name){
+  const id = 'sess-' + Date.now();
+  const code = 'SESS-' + Math.floor(4000 + Math.random()*900);
+  const session = { id, code, title: name || 'New Session', named: !!name, tag: 'active', messages: [] };
+  state.sessions.unshift(session);
+  setActiveSession(id);
+  renderSessionList();
 }
-bindToggle(el.reasoningToggle, 'reasoningMode');
-bindToggle(el.fastToggle, 'fastMode');
+function currentSession(){ return state.sessions.find(s => s.id === state.activeSessionId); }
+function ensureSession(){ if (!state.activeSessionId) createSession(null); }
+
+function setActiveSession(id){
+  state.activeSessionId = id;
+  const s = state.sessions.find(x => x.id === id);
+  el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
+  renderSessionList();
+  renderMessages();
+  if (window.innerWidth <= 900) closeSidebarOverlay();
+}
+
+function renderSessionList(filter=''){
+  el.sessionList.innerHTML = '';
+  const filtered = state.sessions.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()));
+  if (filtered.length === 0){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:14px 10px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);';
+    empty.textContent = state.sessions.length === 0 ? 'No sessions yet — start one above.' : 'No matches.';
+    el.sessionList.appendChild(empty);
+    return;
+  }
+  filtered.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
+    item.tabIndex = 0;
+    item.innerHTML = `
+      <div class="session-dot"></div>
+      <div class="session-meta">
+        <div class="session-title">${escapeHtml(s.title)}</div>
+        <div class="session-sub">
+          <span>${s.code}</span>
+          <span class="tag ${s.tag}">${s.tag}</span>
+          <span>${s.messages.length} msg${s.messages.length === 1 ? '' : 's'}</span>
+        </div>
+      </div>`;
+    item.addEventListener('click', () => setActiveSession(s.id));
+    el.sessionList.appendChild(item);
+  });
+}
+el.sessionSearch.addEventListener('input', e => renderSessionList(e.target.value));
+el.newSessionBtn.addEventListener('click', () => openModal('newsession'));
 
 /* ============================================================
-   MODEL SELECT sync
-============================================================ */
-el.sidebarModel.addEventListener('change', () => {
-  const label = el.sidebarModel.options[el.sidebarModel.selectedIndex].text;
-  document.querySelector('.model-chip').innerHTML = `<span class="dot"></span> ${label}`;
-  document.querySelector('.topbar-sub').textContent = `encrypted channel · ${label}`;
-});
-
-/* ============================================================
-   ATTACHMENTS (mock)
+   ATTACHMENTS — real file reads (text inlined, images as
+   image_url parts per the OpenAI-compatible content schema)
 ============================================================ */
 el.attachBtn.addEventListener('click', () => el.fileInput.click());
 el.fileInput.addEventListener('change', () => {
-  Array.from(el.fileInput.files).forEach(f => {
-    state.attachments.push(f.name);
+  Array.from(el.fileInput.files).forEach(file => {
+    if (file.type.startsWith('image/')){
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.attachments.push({ name: file.name, kind: 'image', dataUrl: reader.result });
+        renderAttachments();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.attachments.push({ name: file.name, kind: 'text', content: reader.result });
+        renderAttachments();
+      };
+      reader.readAsText(file);
+    }
   });
-  renderAttachments();
   el.fileInput.value = '';
 });
 function renderAttachments(){
   el.attachRow.innerHTML = '';
-  state.attachments.forEach((name, i) => {
+  state.attachments.forEach((att, i) => {
     const chip = document.createElement('div');
-    chip.className = 'attach-chip';
-    chip.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-      <span>${escapeHtml(name)}</span><button aria-label="remove attachment">&times;</button>`;
+    chip.className = 'attach-chip' + (att.kind === 'image' ? ' image-chip' : '');
+    if (att.kind === 'image'){
+      chip.innerHTML = `<img src="${att.dataUrl}" alt=""><span>${escapeHtml(att.name)}</span><button aria-label="remove">&times;</button>`;
+    } else {
+      chip.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span>${escapeHtml(att.name)}</span><button aria-label="remove">&times;</button>`;
+    }
     chip.querySelector('button').addEventListener('click', () => { state.attachments.splice(i,1); renderAttachments(); });
     el.attachRow.appendChild(chip);
   });
 }
 
 /* ============================================================
-   COMPOSER: autosize + focus glow + enable send
+   COMPOSER — autosize + focus glow + enable send
 ============================================================ */
 el.messageInput.addEventListener('input', () => {
   el.messageInput.style.height = 'auto';
   el.messageInput.style.height = Math.min(el.messageInput.scrollHeight, 160) + 'px';
-  el.sendBtn.disabled = el.messageInput.value.trim().length === 0;
+  el.sendBtn.disabled = el.messageInput.value.trim().length === 0 || state.inFlight;
   el.footTokens.textContent = estimateTokens(el.messageInput.value);
 });
 el.messageInput.addEventListener('focus', () => el.composer.classList.add('focused'));
 el.messageInput.addEventListener('blur', () => el.composer.classList.remove('focused'));
 el.messageInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    trySend();
-  }
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); trySend(); }
 });
 el.sendBtn.addEventListener('click', trySend);
-
 document.querySelectorAll('.suggestion').forEach(btn => {
   btn.addEventListener('click', () => {
     el.messageInput.value = btn.dataset.prompt;
@@ -1063,42 +1698,29 @@ document.querySelectorAll('.suggestion').forEach(btn => {
     trySend();
   });
 });
-
 function estimateTokens(text){ return Math.max(0, Math.round(text.trim().length / 4)); }
 
-/* ============================================================
-   MAGNETIC HOVER for buttons
-============================================================ */
 document.querySelectorAll('.magnetic').forEach(btn => {
   btn.addEventListener('mousemove', e => {
     const r = btn.getBoundingClientRect();
-    const x = e.clientX - r.left - r.width/2;
-    const y = e.clientY - r.top - r.height/2;
+    const x = e.clientX - r.left - r.width/2, y = e.clientY - r.top - r.height/2;
     btn.style.transform = `translate(${x*0.28}px, ${y*0.28}px)`;
   });
   btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
 });
 
 /* ============================================================
-   MESSAGE RENDERING (mini markdown)
+   MARKDOWN + CODE RENDERING
 ============================================================ */
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
 function renderMarkdownLite(raw){
-  // extract fenced code blocks first
   const blocks = [];
   let text = raw.replace(/```(\w+)?\n([\s\S]*?)```/g, (m, lang, code) => {
     blocks.push({ lang: lang || 'text', code: code.replace(/\n$/,'') });
     return `\u0000CODEBLOCK${blocks.length-1}\u0000`;
   });
-
   text = escapeHtml(text);
   text = text.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-  // lists
   const lines = text.split('\n');
   let html = ''; let inList = false;
   lines.forEach(line => {
@@ -1107,20 +1729,14 @@ function renderMarkdownLite(raw){
       html += `<li>${line.replace(/^\s*-\s+/, '')}</li>`;
     } else {
       if (inList){ html += '</ul>'; inList = false; }
-      if (line.trim() === '') { html += ''; }
-      else html += `<p>${line}</p>`;
+      if (line.trim() !== '') html += `<p>${line}</p>`;
     }
   });
   if (inList) html += '</ul>';
-
-  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, idx) => {
-    const b = blocks[idx];
-    return renderCodeBlock(b.lang, b.code);
-  });
+  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, idx) => renderCodeBlock(blocks[idx].lang, blocks[idx].code));
   return html;
 }
-
-function highlightCode(code, lang){
+function highlightCode(code){
   let c = escapeHtml(code);
   c = c.replace(/(#.*$|\/\/.*$)/gm, '<span class="tok-com">$1</span>');
   c = c.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="tok-str">$1</span>');
@@ -1129,7 +1745,6 @@ function highlightCode(code, lang){
   c = c.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>');
   return c;
 }
-
 let codeBlockCounter = 0;
 function renderCodeBlock(lang, code){
   const id = 'cb-' + (codeBlockCounter++);
@@ -1141,23 +1756,20 @@ function renderCodeBlock(lang, code){
         copy
       </button>
     </div>
-    <pre id="${id}" data-raw="${encodeURIComponent(code)}">${highlightCode(code, lang)}</pre>
+    <pre id="${id}" data-raw="${encodeURIComponent(code)}">${highlightCode(code)}</pre>
   </div>`;
 }
-
 document.addEventListener('click', e => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
   const pre = document.getElementById(btn.dataset.target);
-  const raw = decodeURIComponent(pre.dataset.raw);
-  navigator.clipboard.writeText(raw).then(() => {
+  navigator.clipboard.writeText(decodeURIComponent(pre.dataset.raw)).then(() => {
     btn.classList.add('copied');
     const original = btn.innerHTML;
     btn.innerHTML = 'copied ✓';
     setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1400);
   });
 });
-
 document.addEventListener('click', e => {
   const head = e.target.closest('.reasoning-head');
   if (!head) return;
@@ -1165,26 +1777,8 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================================
-   SENDING / STREAMING
+   MESSAGE RENDERING
 ============================================================ */
-function nowTime(){
-  const d = new Date();
-  return d.toTimeString().slice(0,8);
-}
-function randomHash(){
-  return Array.from({length:6}, () => Math.floor(Math.random()*16).toString(16)).join('');
-}
-
-function ensureSession(){
-  if (!state.activeSessionId){
-    createSession();
-  }
-}
-
-function currentSession(){
-  return state.sessions.find(s => s.id === state.activeSessionId);
-}
-
 function renderMessages(){
   el.chatInner.innerHTML = '';
   const s = currentSession();
@@ -1195,76 +1789,99 @@ function renderMessages(){
   s.messages.forEach(m => el.chatInner.appendChild(buildMessageNode(m)));
   scrollToBottom();
 }
-
 function buildMessageNode(m){
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + m.role;
+  const roleLabel = m.role === 'user' ? 'OPERATOR' : m.role === 'system' ? 'SYSTEM' : 'MAINFRAME-AI';
+  const avatarLabel = m.role === 'user' ? 'OP' : m.role === 'system' ? '!' : 'AI';
+  let citationsHtml = '';
+  if (m.citations && m.citations.length){
+    citationsHtml = `<div class="citations">${m.citations.map(c => `<a class="citation-chip" href="${escapeHtml(c.url)}" target="_blank" rel="noopener" title="${escapeHtml(c.title||c.url)}">${escapeHtml(c.title || c.url)}</a>`).join('')}</div>`;
+  }
+  let usageHtml = '';
+  if (m.usage){
+    const u = m.usage;
+    const searches = u.server_tool_use && u.server_tool_use.web_search_requests;
+    usageHtml = `<div class="usage-line">prompt ${u.prompt_tokens ?? '—'} · completion ${u.completion_tokens ?? '—'}${u.cost != null ? ' · $' + Number(u.cost).toFixed(5) : ''}${searches ? ' · 🔍 ' + searches + ' web search' + (searches===1?'':'es') : ''}</div>`;
+  }
   wrap.innerHTML = `
-    <div class="msg-avatar">${m.role === 'user' ? 'OP' : 'AI'}</div>
+    <div class="msg-avatar">${avatarLabel}</div>
     <div class="msg-body">
       <div class="msg-head">
-        <span class="msg-role">${m.role === 'user' ? 'OPERATOR' : 'MAINFRAME-AI'}</span>
-        <span class="msg-time">${m.time}</span>
-        <span class="msg-hash">#${m.hash}</span>
+        <span class="msg-role">${roleLabel}</span>
+        <span class="msg-time">${m.time || ''}</span>
+        ${m.hash ? `<span class="msg-hash">#${m.hash}</span>` : ''}
       </div>
-      <div class="bubble">${m.html}</div>
+      ${m.reasoningHtml || ''}
+      <div class="bubble">${m.html || ''}${citationsHtml}${usageHtml}</div>
     </div>`;
   return wrap;
 }
+function scrollToBottom(){ requestAnimationFrame(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; }); }
 
-function scrollToBottom(){
-  requestAnimationFrame(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; });
+/* ============================================================
+   SENDING — real OpenRouter chat completions, streamed
+============================================================ */
+function buildApiMessages(sessionMessages){
+  return sessionMessages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.apiContent !== undefined ? m.apiContent : m.raw }));
+}
+
+function systemBubble(text){
+  const s = currentSession();
+  const msg = { role: 'system', html: `<p>${escapeHtml(text)}</p>`, time: nowTime(), hash: randomHash() };
+  if (s){ s.messages.push(msg); }
+  if (el.emptyState.parentElement) el.emptyState.remove();
+  el.chatInner.appendChild(buildMessageNode(msg));
+  scrollToBottom();
 }
 
 function trySend(){
   const text = el.messageInput.value.trim();
-  if (!text) return;
+  if (!text || state.inFlight) return;
+
+  if (!state.apiKey){ openModal('apikey'); return; }
+  if (!state.selectedModelId){ ensureSession(); systemBubble('Pick a model from the sidebar before sending.'); return; }
+
   ensureSession();
   const s = currentSession();
-
-  if (s.messages.length === 0){
+  if (!s.named && s.messages.length === 0){
     s.title = text.slice(0, 34) + (text.length > 34 ? '…' : '');
-    el.activeSessionTitle.textContent = `${s.code} :: ${s.title}`;
-    renderSessionList();
   }
 
-  const userMsg = { role: 'user', html: renderMarkdownLite(text), time: nowTime(), hash: randomHash() };
+  const textAttachments = state.attachments.filter(a => a.kind === 'text');
+  const imageAttachments = state.attachments.filter(a => a.kind === 'image');
+  let fullText = text;
+  textAttachments.forEach(a => { fullText += `\n\n\`\`\`${a.name}\n${a.content}\n\`\`\``; });
+
+  let apiContent;
+  if (imageAttachments.length){
+    apiContent = [{ type: 'text', text: fullText }, ...imageAttachments.map(a => ({ type: 'image_url', image_url: { url: a.dataUrl } }))];
+  } else {
+    apiContent = fullText;
+  }
+
+  const userMsg = { role: 'user', raw: fullText, apiContent, html: renderMarkdownLite(text + (textAttachments.length ? `\n\n*(${textAttachments.length} file attached)*` : '')), time: nowTime(), hash: randomHash() };
   s.messages.push(userMsg);
   if (el.emptyState.parentElement) el.emptyState.remove();
   el.chatInner.appendChild(buildMessageNode(userMsg));
   scrollToBottom();
+  renderSessionList();
 
   el.messageInput.value = '';
   el.messageInput.style.height = 'auto';
-  el.sendBtn.disabled = true;
-  el.footTokens.textContent = '0';
   state.attachments = [];
   renderAttachments();
+  el.footTokens.textContent = '0';
+  el.sendBtn.disabled = true;
 
-  bumpContext(estimateTokens(text));
-  respondTo(text);
+  streamCompletion(s);
 }
 
-function bumpContext(n){
-  state.ctxUsed = Math.min(state.ctxMax, state.ctxUsed + n * 3);
-  const pct = Math.min(100, (state.ctxUsed / state.ctxMax) * 100);
-  el.ctxFill.style.width = pct.toFixed(1) + '%';
-  el.tokenMeter.textContent = `${Math.round(state.ctxUsed/1000)}K / 128K`;
-}
+async function streamCompletion(session){
+  state.inFlight = true;
 
-/* fake tool trigger based on keywords */
-function detectTool(text){
-  const t = text.toLowerCase();
-  if (t.includes('log') || t.includes('audit')) return 'Querying log index';
-  if (t.includes('search') || t.includes('find')) return 'Searching knowledge base';
-  if (t.includes('file') || t.includes('script') || t.includes('parse')) return 'Reading file context';
-  return null;
-}
-
-function respondTo(userText){
-  const s = currentSession();
-
-  // typing indicator
   const typingNode = document.createElement('div');
   typingNode.className = 'msg ai';
   typingNode.innerHTML = `
@@ -1276,92 +1893,153 @@ function respondTo(userText){
   el.chatInner.appendChild(typingNode);
   scrollToBottom();
 
-  const tool = detectTool(userText);
-  if (tool){
+  if (state.webSearch){
     el.toolLive.classList.add('active');
-    el.toolLive.innerHTML = `<span class="pip"></span> ${tool}...`;
+    el.toolLive.innerHTML = '<span class="pip"></span> Web search armed';
   }
 
-  const thinkDelay = state.fastMode ? 500 : 1300;
+  const body = {
+    model: state.selectedModelId,
+    messages: buildApiMessages(session.messages),
+    stream: true,
+    usage: { include: true },
+  };
+  if (state.reasoningMode) body.reasoning = { enabled: true, effort: 'medium' };
+  if (state.fastMode) body.provider = { sort: 'throughput' };
+  if (state.webSearch) body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
 
-  setTimeout(() => {
+  let contentText = '';
+  let reasoningText = '';
+  let citations = [];
+  let usage = null;
+
+  try {
+    const res = await fetch(`${OR_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${state.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok){
+      const errBody = await res.json().catch(() => ({}));
+      const msg = (errBody && errBody.error && errBody.error.message) || `HTTP ${res.status}`;
+      typingNode.remove();
+      if (res.status === 401) systemBubble(`Authentication failed: ${msg}. Check your API key.`);
+      else if (res.status === 402) systemBubble(`Out of credits: ${msg}.`);
+      else if (res.status === 429) systemBubble(`Rate limited: ${msg}. Wait a moment and retry.`);
+      else systemBubble(`Request failed (${res.status}): ${msg}`);
+      state.inFlight = false;
+      el.sendBtn.disabled = el.messageInput.value.trim().length === 0;
+      el.toolLive.classList.remove('active');
+      el.toolLive.innerHTML = '<span class="pip"></span> Idle';
+      return;
+    }
+
     typingNode.remove();
-    streamAssistantReply(userText, tool);
-  }, thinkDelay);
-}
-
-function buildFakeReply(userText){
-  const t = userText.toLowerCase();
-  if (t.includes('firewall') || t.includes('audit')){
-    return "Ran a pass over the ruleset. Findings:\n\n- **14 stale allowlist entries** referencing decommissioned hosts\n- Two rules with overlapping CIDR ranges — safe to consolidate\n- No unrestricted inbound rules detected on management VLAN\n\nHere's a quick script to flag stale entries automatically:\n\n```python\ndef find_stale_rules(rules, active_hosts):\n    stale = []\n    for rule in rules:\n        if rule.host not in active_hosts:\n            stale.append(rule)\n    return stale\n```\n\nWant me to generate the full remediation runbook next?";
-  }
-  if (t.includes('incident') || t.includes('runbook') || t.includes('leak')){
-    return "Drafted a first pass of the runbook:\n\n- **Contain** — rotate the leaked credential and revoke active sessions\n- **Assess** — pull auth logs for the affected window\n- **Notify** — page the on-call security lead\n- **Remediate** — patch the ingress vector, re-issue secrets\n- **Review** — postmortem within 48 hours\n\nI can expand any section into full detail, or format this as a `.md` doc for your runbook repo.";
-  }
-  if (t.includes('parse') || t.includes('python') || t.includes('script')){
-    return "Here's a starting point for parsing mainframe access logs:\n\n```python\nimport re\n\nPATTERN = re.compile(r'(?P<ts>\\S+) (?P<user>\\S+) (?P<action>\\S+) (?P<resource>\\S+)')\n\ndef parse_log(path):\n    entries = []\n    with open(path) as f:\n        for line in f:\n            m = PATTERN.match(line)\n            if m:\n                entries.append(m.groupdict())\n    return entries\n```\n\nThis captures timestamp, user, action, and resource fields. Let me know the actual log format and I'll tighten the regex.";
-  }
-  if (t.includes('zero-trust') || t.includes('zero trust') || t.includes('segment')){
-    return "Zero-trust segmentation around a legacy mainframe usually comes down to three layers:\n\n- **Identity-aware proxy** in front of every terminal session — no implicit trust from network location\n- **Micro-segmented VLANs** isolating the mainframe from general corporate traffic\n- **Continuous verification** — short-lived credentials instead of standing access\n\nThe mainframe itself often can't be modified, so most of the enforcement happens at the network edge and the proxy layer in front of it.";
-  }
-  return "Acknowledged. I've logged the request and cross-referenced it against the active session context. Give me a bit more detail on the target system or desired output format and I'll put together a concrete plan — including any scripts, configs, or docs you need.";
-}
-
-function streamAssistantReply(userText, tool){
-  const s = currentSession();
-  const replyRaw = buildFakeReply(userText);
-  const showReasoning = state.reasoningMode;
-
-  const node = document.createElement('div');
-  node.className = 'msg ai';
-  const hash = randomHash();
-  node.innerHTML = `
-    <div class="msg-avatar">AI</div>
-    <div class="msg-body">
-      <div class="msg-head">
-        <span class="msg-role">MAINFRAME-AI</span>
-        <span class="msg-time">${nowTime()}</span>
-        <span class="msg-hash">#${hash}</span>
-      </div>
-      ${tool ? `<div class="tool-badge"><span class="tool-spin"></span> ${escapeHtml(tool)}</div>` : ''}
-      ${showReasoning ? `<div class="reasoning open">
+    const node = document.createElement('div');
+    node.className = 'msg ai';
+    const hash = randomHash();
+    node.innerHTML = `
+      <div class="msg-avatar">AI</div>
+      <div class="msg-body">
+        <div class="msg-head">
+          <span class="msg-role">MAINFRAME-AI</span>
+          <span class="msg-time">${nowTime()}</span>
+          <span class="msg-hash">#${hash}</span>
+        </div>
+        <div class="reasoning" id="reason-${hash}" style="display:none;">
           <div class="reasoning-head">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
             reasoning trace
           </div>
-          <div class="reasoning-body">Parsing intent → identifying relevant subsystem → cross-checking prior session context → selecting response strategy → drafting structured output...</div>
-        </div>` : ''}
-      <div class="bubble"><span class="stream-target"></span><span class="cursor-blip"></span></div>
-    </div>`;
-  el.chatInner.appendChild(node);
-  scrollToBottom();
-
-  const target = node.querySelector('.stream-target');
-  const cursor = node.querySelector('.cursor-blip');
-  const fullHtml = renderMarkdownLite(replyRaw);
-
-  // stream by revealing the raw text progressively, then finalize with full markdown render
-  const chars = replyRaw.split('');
-  let i = 0;
-  const speed = state.fastMode ? 6 : 18; // ms per tick
-  const chunk = state.fastMode ? 3 : 1;
-
-  const interval = setInterval(() => {
-    i += chunk;
-    target.textContent = replyRaw.slice(0, i);
+          <div class="reasoning-body"></div>
+        </div>
+        <div class="bubble"><span class="stream-target"></span><span class="cursor-blip"></span></div>
+      </div>`;
+    el.chatInner.appendChild(node);
     scrollToBottom();
-    bumpContext(0.3);
-    if (i >= chars.length){
-      clearInterval(interval);
-      cursor.remove();
-      node.querySelector('.bubble').innerHTML = fullHtml;
-      el.toolLive.classList.remove('active');
-      el.toolLive.innerHTML = '<span class="pip"></span> Tools idle';
-      bumpContext(estimateTokens(replyRaw));
-      s.messages.push({ role: 'ai', html: fullHtml, time: nowTime(), hash });
-      scrollToBottom();
+    const target = node.querySelector('.stream-target');
+    const cursor = node.querySelector('.cursor-blip');
+    const reasonWrap = node.querySelector('.reasoning');
+    const reasonBody = node.querySelector('.reasoning-body');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true){
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines){
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') continue;
+        let chunk;
+        try { chunk = JSON.parse(payload); } catch (e) { continue; }
+        if (chunk.error){
+          contentText += `\n\n[stream error: ${chunk.error.message || 'unknown'}]`;
+          continue;
+        }
+        const choice = chunk.choices && chunk.choices[0];
+        if (choice && choice.delta){
+          if (choice.delta.content){
+            contentText += choice.delta.content;
+            target.textContent = contentText;
+          }
+          if (choice.delta.reasoning){
+            reasoningText += choice.delta.reasoning;
+            reasonWrap.style.display = 'block';
+            reasonWrap.classList.add('open');
+            reasonBody.textContent = reasoningText;
+          }
+          if (choice.delta.annotations){
+            choice.delta.annotations.forEach(a => {
+              if (a.type === 'url_citation' && a.url_citation){
+                citations.push({ url: a.url_citation.url, title: a.url_citation.title });
+              }
+            });
+          }
+        }
+        if (chunk.usage) usage = chunk.usage;
+        scrollToBottom();
+      }
     }
-  }, speed);
+
+    cursor.remove();
+    const finalHtml = renderMarkdownLite(contentText || '*(empty response)*');
+    const searches = usage && usage.server_tool_use && usage.server_tool_use.web_search_requests;
+    node.querySelector('.bubble').innerHTML = finalHtml +
+      (citations.length ? `<div class="citations">${citations.map(c => `<a class="citation-chip" href="${escapeHtml(c.url)}" target="_blank" rel="noopener" title="${escapeHtml(c.title||c.url)}">${escapeHtml(c.title || c.url)}</a>`).join('')}</div>` : '') +
+      (usage ? `<div class="usage-line">prompt ${usage.prompt_tokens ?? '—'} · completion ${usage.completion_tokens ?? '—'}${usage.cost != null ? ' · $' + Number(usage.cost).toFixed(5) : ''}${searches ? ' · 🔍 ' + searches + ' web search' + (searches===1?'':'es') : ''}</div>` : '');
+
+    session.messages.push({
+      role: 'assistant', raw: contentText, apiContent: contentText, html: finalHtml,
+      time: nowTime(), hash, citations, usage,
+      reasoningHtml: reasoningText ? node.querySelector('.reasoning').outerHTML : '',
+    });
+
+    if (usage){
+      el.tokenMeter.textContent = `${formatCtx((usage.prompt_tokens||0) + (usage.completion_tokens||0))} / ${formatCtx(state.ctxMax)}`;
+      if (state.ctxMax) el.ctxFill.style.width = Math.min(100, (usage.prompt_tokens||0) / state.ctxMax * 100).toFixed(1) + '%';
+    }
+  } catch (e) {
+    typingNode.remove();
+    systemBubble(`Connection error: ${e.message || 'could not reach openrouter.ai'}`);
+  }
+
+  state.inFlight = false;
+  el.sendBtn.disabled = el.messageInput.value.trim().length === 0;
+  el.toolLive.classList.remove('active');
+  el.toolLive.innerHTML = '<span class="pip"></span> Idle';
+  renderSessionList();
+  scrollToBottom();
 }
 
 /* ============================================================
@@ -1372,17 +2050,12 @@ function streamAssistantReply(userText, tool){
   const ctx = canvas.getContext('2d');
   let w, h, particles = [];
   const COUNT = 46;
-
-  function resize(){
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-  }
+  function resize(){ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
   function init(){
     particles = Array.from({length: COUNT}, () => ({
       x: Math.random()*w, y: Math.random()*h,
       vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15,
-      r: Math.random()*1.6 + 0.4,
-      hueAmber: Math.random() < 0.18,
+      r: Math.random()*1.6 + 0.4, hueAmber: Math.random() < 0.18,
     }));
   }
   function tick(){
@@ -1391,39 +2064,38 @@ function streamAssistantReply(userText, tool){
       p.x += p.vx; p.y += p.vy;
       if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
       if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
       ctx.fillStyle = p.hueAmber ? 'rgba(255,180,84,0.55)' : 'rgba(61,255,160,0.5)';
       ctx.fill();
     });
-    // connective lines for nearby particles
     for (let a=0; a<particles.length; a++){
       for (let b=a+1; b<particles.length; b++){
         const dx = particles[a].x - particles[b].x, dy = particles[a].y - particles[b].y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist < 110){
-          ctx.beginPath();
-          ctx.moveTo(particles[a].x, particles[a].y);
-          ctx.lineTo(particles[b].x, particles[b].y);
-          ctx.strokeStyle = `rgba(61,255,160,${0.08 * (1 - dist/110)})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y);
+          ctx.strokeStyle = `rgba(61,255,160,${0.08 * (1 - dist/110)})`; ctx.lineWidth = 1; ctx.stroke();
         }
       }
     }
     requestAnimationFrame(tick);
   }
-  window.addEventListener('resize', () => { resize(); });
+  window.addEventListener('resize', resize);
   resize(); init(); tick();
 })();
 
 /* ============================================================
    INIT
 ============================================================ */
-seedSessions();
 renderSessionList();
 updateSidebarClass();
-bumpContext(0);
+renderConnection();
+if (state.apiKey){
+  fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${state.apiKey}` } })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => { state.keyInfo = data.data || null; renderConnection(); return fetchModels(); })
+    .catch(() => { state.keyInfo = null; renderConnection(); });
+}
 </script>
 </body>
 </html>
