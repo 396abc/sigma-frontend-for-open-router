@@ -2990,6 +2990,12 @@ function trySend(){
 }
 
 async function streamCompletion(session){
+  // Re-derive the personality preset for whatever model is selected
+  // right now, not whatever it was last time this ran — covers both
+  // a normal send and a retry, and catches a model change that
+  // happened without going through selectModel() in between.
+  applyAutoPersonality();
+
   state.inFlight = true;
   el.sendBtn.classList.add('stop-mode');
   el.sendBtn.disabled = false;
