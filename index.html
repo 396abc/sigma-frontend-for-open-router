@@ -2791,13 +2791,46 @@ function renderMarkdownLite(raw){
   html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, idx) => renderCodeBlock(blocks[idx].lang, blocks[idx].code));
   return html;
 }
-function highlightCode(code){
+function highlightCode(code) {
   let c = escapeHtml(code);
-  c = c.replace(/(#.*$|\/\/.*$)/gm, '<span class="tok-com">$1</span>');
-  c = c.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="tok-str">$1</span>');
-  c = c.replace(/\b(def|class|import|from|return|if|else|elif|for|while|in|const|let|var|function|async|await|try|except|catch|new|true|false|None|null|self)\b/g, '<span class="tok-kw">$1</span>');
-  c = c.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g, '<span class="tok-fn">$1</span>');
-  c = c.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>');
+
+  const protectedParts = [];
+
+  function protect(html) {
+    const id = protectedParts.length;
+    protectedParts.push(html);
+    return `\uE000${id}\uE001`;
+  }
+
+  // Comments
+  c = c.replace(/(#.*$|\/\/.*$)/gm,
+    m => protect(`<span class="tok-com">${m}</span>`));
+
+  // Strings
+  c = c.replace(/("(?:[^"\\\\]|\\\\.)*"|'(?:[^'\\\\]|\\\\.)*')/g,
+    m => protect(`<span class="tok-str">${m}</span>`));
+
+  // Keywords
+  c = c.replace(
+    /\b(def|class|import|from|return|if|else|elif|for|while|in|const|let|var|function|async|await|try|except|catch|new|true|false|None|null|self)\b/g,
+    '<span class="tok-kw">$1</span>'
+  );
+
+  // Function names
+  c = c.replace(
+    /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g,
+    '<span class="tok-fn">$1</span>'
+  );
+
+  // Numbers
+  c = c.replace(
+    /\b(\d+\.?\d*)\b/g,
+    '<span class="tok-num">$1</span>'
+  );
+
+  // Restore protected HTML
+  c = c.replace(/\uE000(\d+)\uE001/g, (_, i) => protectedParts[i]);
+
   return c;
 }
 let codeBlockCounter = 0;
