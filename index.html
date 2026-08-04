@@ -566,11 +566,13 @@ body{
 }
 .copy-btn:hover{ color: var(--phosphor); border-color: var(--phosphor-dim); }
 .copy-btn.copied{ color: var(--phosphor); border-color: var(--phosphor); }
+.copy-btn.copy-failed{ color: var(--danger); border-color: rgba(255,92,92,0.5); }
 .download-btn:hover{ color: #6fd8ff; border-color: rgba(111,216,255,.5); }
 .codeblock pre{
   margin:0; padding: 12px 14px; overflow-x:auto;
   font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
   color: #cdeedd;
+  white-space: pre;
 }
 .tok-kw{ color: #ff8fb3; } .tok-str{ color: #ffd479; } .tok-com{ color: #5c7a6c; } .tok-fn{ color: #6fd8ff; } .tok-num{ color: #b592ff; }
 
@@ -2634,10 +2636,14 @@ el.payloadToggle.addEventListener('click', openPayloadPanel);
 el.payloadPanelClose.addEventListener('click', closePayloadPanel);
 el.payloadScrim.addEventListener('click', closePayloadPanel);
 el.payloadCopyBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText(el.payloadContent.textContent).then(() => {
+  copyText(el.payloadContent.textContent).then(() => {
     const original = el.payloadCopyBtn.innerHTML;
     el.payloadCopyBtn.innerHTML = 'copied ✓';
     setTimeout(() => { el.payloadCopyBtn.innerHTML = original; }, 700);
+  }).catch(() => {
+    const original = el.payloadCopyBtn.innerHTML;
+    el.payloadCopyBtn.innerHTML = 'failed ✗';
+    setTimeout(() => { el.payloadCopyBtn.innerHTML = original; }, 900);
   });
 });
 
@@ -2765,138 +2771,302 @@ document.querySelectorAll('.magnetic').forEach(btn => {
 });
 
 /* ============================================================
-   MARKDOWN + CODE RENDERING
+   CLIPBOARD HELPER — navigator.clipboard requires a secure
+   context and can silently reject (permissions, insecure
+   context, some in-app browsers); this falls back to the old
+   execCommand('copy') trick via a hidden textarea so the copy
+   buttons keep working everywhere instead of failing silently.
 ============================================================ */
-function renderMarkdownLite(raw){
-  const blocks = [];
-  let text = raw.replace(/```(\w+)?\n([\s\S]*?)```/g, (m, lang, code) => {
-    blocks.push({ lang: lang || 'text', code: code.replace(/\n$/,'') });
-    return `\u0000CODEBLOCK${blocks.length-1}\u0000`;
+function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) resolve(); else reject(new Error('execCommand copy failed'));
+    } catch (err) {
+      reject(err);
+    }
   });
-  text = escapeHtml(text);
-  text = text.replace(/`([^`]+)`/g, '<code class="inline" title="Click to copy">$1</code>');
-  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+/* ============================================================
+   MARKDOWN + CODE RENDERING
+   ------------------------------------------------------------
+   Code-fence detection is a small line-based scanner rather
+   than a single regex. This matters because a single regex
+   over the whole message breaks in ways that are extremely
+   common with real LLM output:
+     - no blank/newline discipline around the fence markers
+     - ``` vs ~~~ fences, or fences of more than 3 chars
+     - up to 3 leading spaces of indentation on the fence line
+       (CommonMark-legal, and models emit this constantly)
+     - a fence left unterminated (still streaming, or the model
+       just forgot to close it) — the old regex would eat the
+       rest of the message as plain text instead of still
+       showing the code
+     - a fence of the same character nested inside another
+       (e.g. a code block that itself contains a markdown
+       example with ``` in it) — only a fence of matching
+       character *and* length closes the block
+   None of that is language-specific, so this same scanner
+   handles any language uniformly instead of special-casing
+   any one of them.
+============================================================ */
+function extractCodeBlocks(raw){
+  const lines = raw.split(/\r\n|\r|\n/);
+  const fenceOpenRe = /^ {0,3}(`{3,}|~{3,})[ \t]*([^\n`]*?)[ \t]*$/;
+  const blocks = [];
+  const outLines = [];
+  let i = 0;
+
+  while (i < lines.length){
+    const m = lines[i].match(fenceOpenRe);
+    if (m){
+      const fenceChar = m[1][0];
+      const fenceLen = m[1].length;
+      const lang = (m[2] || '').trim();
+      const closeRe = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLen + ',}[ \\t]*$');
+      const codeLines = [];
+      i++;
+      let closed = false;
+      while (i < lines.length){
+        if (closeRe.test(lines[i])){ closed = true; i++; break; }
+        codeLines.push(lines[i]);
+        i++;
+      }
+      const idx = blocks.length;
+      blocks.push({ lang: lang || 'text', code: codeLines.join('\n'), incomplete: !closed });
+      outLines.push(`\u0000CODEBLOCK${idx}\u0000`);
+    } else {
+      outLines.push(lines[i]);
+      i++;
+    }
+  }
+  return { text: outLines.join('\n'), blocks };
+}
+
+function renderMarkdownLite(raw){
+  const { text, blocks } = extractCodeBlocks(raw);
+  const codeLineRe = /^\u0000CODEBLOCK(\d+)\u0000$/;
   const lines = text.split('\n');
-  let html = ''; let inList = false;
-  lines.forEach(line => {
+
+  let html = '';
+  let inList = false;
+  function closeList(){ if (inList){ html += '</ul>'; inList = false; } }
+
+  lines.forEach(rawLine => {
+    const cbm = rawLine.match(codeLineRe);
+    if (cbm){
+      // Block-level markup — never nested inside a <p> or <li>.
+      closeList();
+      const b = blocks[Number(cbm[1])];
+      if (b) html += renderCodeBlock(b.lang, b.code, b.incomplete);
+      return;
+    }
+
+    let line = escapeHtml(rawLine);
+    line = line.replace(/`([^`]+)`/g, '<code class="inline" title="Click to copy">$1</code>');
+    line = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
     if (/^\s*-\s+/.test(line)){
       if (!inList){ html += '<ul>'; inList = true; }
       html += `<li>${line.replace(/^\s*-\s+/, '')}</li>`;
     } else {
-      if (inList){ html += '</ul>'; inList = false; }
+      closeList();
       if (line.trim() !== '') html += `<p>${line}</p>`;
     }
   });
-  if (inList) html += '</ul>';
-  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, idx) => renderCodeBlock(blocks[idx].lang, blocks[idx].code));
+  closeList();
   return html;
 }
-function highlightCode(code) {
-  let c = escapeHtml(code);
 
+/* ============================================================
+   SYNTAX HIGHLIGHTING — deliberately generic/heuristic (not a
+   real per-language tokenizer) so it holds up across whatever
+   language the model outputs, rather than only looking right
+   for one or two.
+
+   Strings and comments are protected behind placeholder tokens
+   before any further regex runs, and — this is the important
+   fix — everything else is applied only to the *non-placeholder*
+   chunks (via split/map/join) rather than to the whole string.
+   The previous version ran the keyword/number regexes over the
+   whole string including the placeholders, and since those
+   placeholders were built from a plain digit id, the number
+   regex would match the digit inside a placeholder and re-wrap
+   it, corrupting the placeholder so it could never be restored
+   — leaving literal stray marker characters and broken spans in
+   the output. Splitting them out entirely avoids that class of
+   bug regardless of how many strings/comments a block has.
+============================================================ */
+const HIGHLIGHT_KEYWORDS = new RegExp(
+  '\\b(' + [
+    'def','class','import','from','return','if','else','elif','for','while','in','of',
+    'const','let','var','function','async','await','try','except','finally','catch','throw',
+    'new','true','false','null','nil','none','undefined','self','this','super',
+    'public','private','protected','static','readonly','abstract','virtual','override',
+    'void','int','float','double','char','bool','boolean','string','struct','enum',
+    'interface','extends','implements','package','namespace','using','include','require',
+    'end','do','then','match','case','switch','default','break','continue','yield','lambda',
+    'with','as','is','not','and','or','xor',
+    'fn','impl','trait','mod','pub','mut','type','typeof','instanceof',
+    'go','defer','chan','select','func',
+  ].join('|') + ')\\b',
+  'g'
+);
+
+function highlightCode(code){
+  // Work on the RAW, unescaped source for string/comment detection.
+  // Escaping first (the previous approach) turns a literal apostrophe
+  // into "&#39;" — and a bare "#" comment-detector run AFTER that
+  // escaping matches the "#" inside "&#39;", misreading any string
+  // containing an apostrophe as the start of a comment and mangling
+  // it. Escaping now happens per-segment, after strings/comments are
+  // pulled out, so it can never introduce characters the detectors
+  // then misinterpret.
+  let c = code;
   const protectedParts = [];
-
-  function protect(html) {
+  function protect(escapedHtml){
     const id = protectedParts.length;
-    protectedParts.push(html);
+    protectedParts.push(escapedHtml);
     return `\uE000${id}\uE001`;
   }
 
-  // Comments
-  c = c.replace(/(#.*$|\/\/.*$)/gm,
-    m => protect(`<span class="tok-com">${m}</span>`));
+  // Strings first — so a comment marker (# or //) that merely appears
+  // inside a string (e.g. a URL like "http://example.com") doesn't get
+  // misread as the start of a comment.
+  c = c.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g,
+    m => protect(`<span class="tok-str">${escapeHtml(m)}</span>`));
 
-  // Strings
-  c = c.replace(/("(?:[^"\\\\]|\\\\.)*"|'(?:[^'\\\\]|\\\\.)*')/g,
-    m => protect(`<span class="tok-str">${m}</span>`));
+  // Block comments, then line comments (# or //), now that strings are
+  // already protected out of the way.
+  c = c.replace(/\/\*[\s\S]*?\*\//g, m => protect(`<span class="tok-com">${escapeHtml(m)}</span>`));
+  c = c.replace(/(\/\/[^\n]*|#[^\n]*)/g,
+    comment => protect(`<span class="tok-com">${escapeHtml(comment)}</span>`));
 
-  // Keywords
-  c = c.replace(
-    /\b(def|class|import|from|return|if|else|elif|for|while|in|const|let|var|function|async|await|try|except|catch|new|true|false|None|null|self)\b/g,
-    '<span class="tok-kw">$1</span>'
-  );
+  // Everything from here on must NOT touch the protected placeholders,
+  // so split them out, escape + transform only the plain-text chunks,
+  // then rejoin — the placeholders pass through untouched no matter
+  // what characters (including digits) they contain.
+  const parts = c.split(/(\uE000\d+\uE001)/);
+  const highlighted = parts.map(part => {
+    if (/^\uE000\d+\uE001$/.test(part)) return part;
+    let seg = escapeHtml(part);
+    seg = seg.replace(HIGHLIGHT_KEYWORDS, '<span class="tok-kw">$1</span>');
+    seg = seg.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()/g, '<span class="tok-fn">$1</span>');
+    seg = seg.replace(/\b(0[xX][0-9a-fA-F]+|\d+\.?\d*(?:[eE][+-]?\d+)?)\b/g, '<span class="tok-num">$1</span>');
+    return seg;
+  }).join('');
 
-  // Function names
-  c = c.replace(
-    /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g,
-    '<span class="tok-fn">$1</span>'
-  );
-
-  // Numbers
-  c = c.replace(
-    /\b(\d+\.?\d*)\b/g,
-    '<span class="tok-num">$1</span>'
-  );
-
-  // Restore protected HTML
-  c = c.replace(/\uE000(\d+)\uE001/g, (_, i) => protectedParts[i]);
-
-  return c;
+  // Restore the protected strings/comments now that nothing else can
+  // corrupt the placeholder markers.
+  return highlighted.replace(/\uE000(\d+)\uE001/g, (_, i) => protectedParts[Number(i)] ?? '');
 }
+
 let codeBlockCounter = 0;
 const LANG_EXT = {
-  python: 'py', py: 'py', javascript: 'js', js: 'js', typescript: 'ts', ts: 'ts',
-  jsx: 'jsx', tsx: 'tsx', html: 'html', css: 'css', scss: 'scss', json: 'json',
-  yaml: 'yml', yml: 'yml', bash: 'sh', sh: 'sh', shell: 'sh', zsh: 'sh',
-  powershell: 'ps1', java: 'java', c: 'c', cpp: 'cpp', 'c++': 'cpp', csharp: 'cs',
-  'c#': 'cs', go: 'go', golang: 'go', rust: 'rs', rs: 'rs', ruby: 'rb', rb: 'rb',
-  php: 'php', sql: 'sql', lua: 'lua', kotlin: 'kt', swift: 'swift', dart: 'dart',
-  xml: 'xml', markdown: 'md', md: 'md', toml: 'toml', dockerfile: 'Dockerfile',
-  makefile: 'Makefile', ini: 'ini', diff: 'diff', graphql: 'graphql', r: 'r',
+  python: 'py', py: 'py', python3: 'py', javascript: 'js', js: 'js', typescript: 'ts', ts: 'ts',
+  jsx: 'jsx', tsx: 'tsx', html: 'html', htm: 'html', css: 'css', scss: 'scss', less: 'less', json: 'json',
+  jsonc: 'json', yaml: 'yml', yml: 'yml', bash: 'sh', sh: 'sh', shell: 'sh', zsh: 'sh', console: 'sh',
+  powershell: 'ps1', ps1: 'ps1', java: 'java', c: 'c', h: 'h', cpp: 'cpp', cxx: 'cpp', 'c++': 'cpp',
+  csharp: 'cs', 'c#': 'cs', cs: 'cs', go: 'go', golang: 'go', rust: 'rs', rs: 'rs', ruby: 'rb', rb: 'rb',
+  php: 'php', sql: 'sql', lua: 'lua', kotlin: 'kt', kt: 'kt', swift: 'swift', dart: 'dart',
+  xml: 'xml', markdown: 'md', md: 'md', toml: 'toml', dockerfile: 'Dockerfile', docker: 'Dockerfile',
+  makefile: 'Makefile', make: 'Makefile', ini: 'ini', cfg: 'ini', diff: 'diff', patch: 'diff',
+  graphql: 'graphql', gql: 'graphql', r: 'r', perl: 'pl', pl: 'pl', scala: 'scala', groovy: 'groovy',
+  elixir: 'ex', ex: 'ex', erlang: 'erl', haskell: 'hs', hs: 'hs', clojure: 'clj', vim: 'vim',
+  text: 'txt', plaintext: 'txt', plain: 'txt',
 };
 function extForLang(lang){
   const key = (lang || '').trim().toLowerCase();
   return LANG_EXT[key] || 'txt';
 }
 
-function renderCodeBlock(lang, code){
+function renderCodeBlock(lang, code, incomplete){
   const id = 'cb-' + (codeBlockCounter++);
+  // The raw code lives verbatim in a hidden <textarea>. Reading
+  // `.value` back out gives byte-for-byte the same text with no
+  // encode/decode step, no HTML-attribute size limits, and no risk
+  // of a URI-encoding failure on unusual streamed unicode — and,
+  // critically, it survives untouched across full re-renders since
+  // it's baked directly into the cached message HTML rather than
+  // living in a separate in-memory registry.
   return `<div class="codeblock">
     <div class="codeblock-head">
-      <span>${escapeHtml(lang)}</span>
+      <span>${escapeHtml(lang)}${incomplete ? ' · streaming…' : ''}</span>
       <div class="codeblock-actions">
-        <button class="copy-btn" data-target="${id}">
+        <button class="copy-btn" data-role="copy" title="Copy code">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           copy
         </button>
-        <button class="copy-btn download-btn" data-target="${id}" data-lang="${escapeHtml(lang)}">
+        <button class="copy-btn download-btn" data-role="download" data-lang="${escapeHtml(lang)}" title="Download as file">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           download
         </button>
       </div>
     </div>
-    <pre id="${id}" data-raw="${encodeURIComponent(code)}">${highlightCode(code)}</pre>
+    <pre id="${id}">${highlightCode(code)}</pre>
+    <textarea class="codeblock-raw" hidden aria-hidden="true" tabindex="-1">${escapeHtml(code)}</textarea>
   </div>`;
 }
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
-  const pre = document.getElementById(btn.dataset.target);
-  const raw = decodeURIComponent(pre.dataset.raw);
+  const container = btn.closest('.codeblock');
+  const rawEl = container && container.querySelector('.codeblock-raw');
+  if (!rawEl) return;
+  const raw = rawEl.value;
 
-  if (btn.classList.contains('download-btn')){
-    const ext = extForLang(btn.dataset.lang);
-    const filename = (ext === 'Dockerfile' || ext === 'Makefile') ? ext : `snippet-${btn.dataset.target}.${ext}`;
-    const blob = new Blob([raw], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    const original = btn.innerHTML;
-    btn.innerHTML = 'saved ✓';
-    setTimeout(() => { btn.innerHTML = original; }, 700);
+  if (btn.dataset.role === 'download'){
+    try {
+      const ext = extForLang(btn.dataset.lang);
+      const filename = (ext === 'Dockerfile' || ext === 'Makefile') ? ext : `snippet-${codeBlockCounter}.${ext}`;
+      const blob = new Blob([raw], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      const original = btn.innerHTML;
+      btn.innerHTML = 'saved ✓';
+      setTimeout(() => { btn.innerHTML = original; }, 700);
+    } catch (err) {
+      const original = btn.innerHTML;
+      btn.classList.add('copy-failed');
+      btn.innerHTML = 'failed ✗';
+      setTimeout(() => { btn.classList.remove('copy-failed'); btn.innerHTML = original; }, 900);
+    }
     return;
   }
 
-  navigator.clipboard.writeText(raw).then(() => {
+  copyText(raw).then(() => {
+    btn.classList.remove('copy-failed');
     btn.classList.add('copied');
     const original = btn.innerHTML;
     btn.innerHTML = 'copied ✓';
     setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 700);
+  }).catch(() => {
+    btn.classList.add('copy-failed');
+    const original = btn.innerHTML;
+    btn.innerHTML = 'failed ✗';
+    setTimeout(() => { btn.classList.remove('copy-failed'); btn.innerHTML = original; }, 900);
   });
 });
 document.addEventListener('click', e => {
@@ -2907,10 +3077,10 @@ document.addEventListener('click', e => {
 document.addEventListener('click', e => {
   const code = e.target.closest('.bubble code.inline');
   if (!code) return;
-  navigator.clipboard.writeText(code.textContent).then(() => {
+  copyText(code.textContent).then(() => {
     code.classList.add('copied');
     setTimeout(() => code.classList.remove('copied'), 350);
-  });
+  }).catch(() => { /* clipboard unavailable — inline code has no visible failure state to flip */ });
 });
 
 /* ============================================================
