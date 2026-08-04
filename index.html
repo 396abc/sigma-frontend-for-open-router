@@ -1925,6 +1925,59 @@ function loadSessions(){
     if (data.activeSessionId) state.activeSessionId = data.activeSessionId;
   } catch (e) { /* corrupt or unavailable — start fresh */ }
 }
+
+// ------------------------------------------------------------
+// MIGRATION — repairs chat history saved by older, buggier
+// builds of this page (broken code-block rendering, dead copy
+// buttons, stray control characters left over from the old
+// highlighter). The saved `raw` text was always correct — only
+// the *cached* `html` was wrong — so this just re-renders every
+// stored message through the current renderMarkdownLite() and
+// overwrites the cached HTML. It's idempotent and cheap (pure
+// string work, no network), so it's safe to run unconditionally
+// on every load rather than trying to detect which sessions are
+// "old": detecting corruption heuristically risks missing a
+// broken variant we didn't think of, while unconditional
+// re-render can't miss anything and never makes an already-good
+// message worse.
+function migrateLegacyMessageHtml(){
+  let changed = false;
+  state.sessions.forEach(s => {
+    if (!s || !Array.isArray(s.messages)) return;
+    s.messages.forEach(m => {
+      if (!m || (m.role !== 'user' && m.role !== 'assistant')) return;
+      if (typeof m.raw !== 'string') return; // no source text to re-render from — leave as-is
+      try {
+        const fresh = renderMarkdownLite(m.raw);
+        if (fresh !== m.html){
+          m.html = fresh;
+          changed = true;
+        }
+      } catch (e) {
+        // Never let one malformed message block the rest of migration
+        // or crash startup — worst case that message keeps its old
+        // (possibly still-broken) cached HTML.
+      }
+    });
+  });
+  if (changed) saveSessions();
+  return changed;
+}
+
+// Old iterations of this page used the same localStorage/cookie keys
+// as today (SESSIONS_STORAGE / SETTINGS_STORAGE / KEY_COOKIE) — the
+// message-level migration above covers those. This sweep only exists
+// to quietly clean up any *differently-named* leftovers from earlier
+// drafts of this file, without ever touching keys we don't recognize
+// as ours.
+const LEGACY_STORAGE_KEYS = ['niche_ai_sessions', 'niche_ai_settings', 'mainframeopsec_chat', 'mainframeopsec_history'];
+const LEGACY_COOKIE_KEYS = ['niche_ai_or_key', 'mainframeopsec_key', 'openrouter_key'];
+function migrateLegacyStorageKeys(){
+  try {
+    LEGACY_STORAGE_KEYS.forEach(k => { if (k !== SESSIONS_STORAGE && k !== SETTINGS_STORAGE) localStorage.removeItem(k); });
+  } catch (e) { /* storage unavailable — non-fatal */ }
+  LEGACY_COOKIE_KEYS.forEach(k => { if (k !== KEY_COOKIE && getCookie(k)) deleteCookie(k); });
+}
 function saveSettings(){
   try {
     localStorage.setItem(SETTINGS_STORAGE, JSON.stringify({
@@ -3613,6 +3666,8 @@ async function streamCompletion(session){
    INIT
 ============================================================ */
 loadSessions();
+migrateLegacyStorageKeys();
+migrateLegacyMessageHtml();
 
 const savedSettings = loadSettings();
 if (savedSettings){
