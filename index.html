@@ -287,6 +287,14 @@ body{
   font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.4px;
   text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
 }
+.sidebar-text-input{
+  width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm); padding: 9px 11px; color: var(--text-hi);
+  font-family: var(--font-mono); font-size: 11.5px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.sidebar-text-input:focus{ border-color: var(--phosphor-dim); box-shadow: 0 0 0 3px rgba(61,255,160,0.08); }
+.sidebar-text-input::placeholder{ color: var(--text-dim); }
 
 /* ============================================================
    CUSTOM DROPDOWN — wraps a native <select> (kept hidden but
@@ -708,6 +716,31 @@ body{
 }
 .options-menu{ left: 0; right: auto; width: min(220px, calc(100vw - 40px)); }
 
+/* Quick-access toggle chips — the same .toggle elements/logic used in
+   the options dropdown, just restyled to sit directly in the visible
+   composer top row instead of being hidden behind a click. */
+.toprow-toggle{
+  width: auto; flex: 0 0 auto;
+  padding: 5px 10px 5px 11px; border-radius: 20px; gap: 6px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--hair);
+}
+.toprow-toggle:hover{ background: rgba(255,255,255,0.05); }
+.toprow-toggle .toggle-text{ flex-direction: row; align-items: center; }
+.toprow-toggle .toggle-label{ font-size: 10.5px; color: var(--text-mute); transition: color .15s; }
+.toprow-toggle .toggle-desc{ display: none; }
+.toprow-toggle .switch{ width: 20px; height: 12px; }
+.toprow-toggle .switch::after{ width: 8px; height: 8px; }
+.toprow-toggle.on .switch::after{ left: 10px; }
+.toprow-toggle.on{ border-color: rgba(61,255,160,0.35); background: rgba(61,255,160,0.06); }
+.toprow-toggle.on .toggle-label{ color: var(--text-hi); }
+.toprow-toggle.blue.on{ border-color: rgba(111,216,255,0.4); background: rgba(111,216,255,0.07); }
+.toprow-toggle.amber.on{ border-color: rgba(255,180,84,0.4); background: rgba(255,180,84,0.07); }
+.toprow-toggle.toprow-toggle-num{ padding-right: 8px; }
+.toprow-toggle.toprow-toggle-num .toggle-num-input{
+  width: 54px; padding: 3px 5px; font-size: 10.5px; border-radius: 5px;
+}
+.toprow-toggle:not(.on) .toggle-num-input{ opacity: .45; }
+
 .toggle{
   display:flex; align-items:center; justify-content: space-between; gap:10px; cursor:pointer;
   padding: 8px 8px; border-radius: 7px;
@@ -1070,7 +1103,7 @@ textarea#messageInput::placeholder{ color: var(--text-dim); }
   .app.sidebar-open .sidebar{ transform: translateX(0); box-shadow: 30px 0 60px rgba(0,0,0,.55); }
   .app.sidebar-open .sidebar-scrim{ display:block; opacity:1; }
 
-  .topbar{ padding: 12px 10px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 6px; }
+  .topbar{ padding: 12px 10px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 6px; flex-wrap: wrap; row-gap: 8px; }
   .topbar-meters{ display:none; }
   .topbar-title{ font-size: 11.5px; max-width: 28vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .topbar-sub{ display:none; }
@@ -1173,6 +1206,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     <div class="session-list" id="sessionList"></div>
 
     <div class="sidebar-footer">
+      <div class="model-select-wrap">
+        <div class="field-label">Display Name</div>
+        <input type="text" id="operatorNameInput" class="sidebar-text-input" maxlength="24" value="OPPERATOR" placeholder="Shown on your messages">
+      </div>
       <div class="model-select-wrap">
         <div class="field-label">Active Model</div>
         <select id="sidebarModel">
@@ -1286,6 +1323,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
           <div class="ctx-bar"><div class="ctx-bar-fill" id="ctxFill"></div></div>
         </div>
       </div>
+      <button class="icon-btn" id="exportChatBtn" title="Export chat as JSON" aria-label="Export current chat as JSON">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="icon-btn" id="importChatBtn" title="Import chat from JSON" aria-label="Import a chat from JSON">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <input type="file" id="importChatInput" accept="application/json,.json" style="display:none" multiple>
       <button class="icon-btn" id="tipsToggle" title="Tips" aria-label="Open tips panel">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0012 2z"/></svg>
       </button>
@@ -1336,44 +1380,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
         <div class="composer-toprow">
           <div class="chip model-chip" id="modelChip"><span class="dot"></span> <span id="modelChipLabel">No model bound</span></div>
-          <div class="cdd options-popover" id="optionsPopover">
-            <button type="button" class="cdd-trigger options-trigger" id="optionsTrigger" title="Request options" aria-haspopup="true">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span class="cdd-trigger-label">Options</span>
-              <span class="options-badge" id="optionsBadge" style="display:none;"></span>
-            </button>
-            <div class="cdd-menu options-menu" id="optionsMenu">
-              <div class="toggle" id="reasoningToggle" tabindex="0" role="switch" aria-checked="false">
-                <div class="toggle-text"><span class="toggle-label">Reasoning</span><span class="toggle-desc">Think before answering</span></div>
-                <span class="switch"></span>
-              </div>
-              <div class="toggle amber on" id="fastToggle" tabindex="0" role="switch" aria-checked="true">
-                <div class="toggle-text"><span class="toggle-label">Fast mode</span><span class="toggle-desc">Route to the fastest provider</span></div>
-                <span class="switch"></span>
-              </div>
-              <div class="toggle blue" id="webSearchToggle" tabindex="0" role="switch" aria-checked="false">
-                <div class="toggle-text"><span class="toggle-label">Web search</span><span class="toggle-desc">Let the model search the web</span></div>
-                <span class="switch"></span>
-              </div>
-              <div class="toggle on" id="maxTokensToggle" tabindex="0" role="switch" aria-checked="true">
-                <div class="toggle-text"><span class="toggle-label">max_tokens</span><span class="toggle-desc">Cap output tokens per request</span></div>
-                <input type="number" id="maxTokensInput" class="toggle-num-input" min="1" max="65536" step="256" value="4096">
-                <span class="switch"></span>
-              </div>
-              <div class="cdd-divider"></div>
-              <div class="toggle" id="autoPersonalityToggle" tabindex="0" role="switch" aria-checked="false">
-                <div class="toggle-text"><span class="toggle-label">AutoJailbreak</span><span class="toggle-desc">Automatically jailbreaks the model through a system prompt.</span></div>
-                <span class="switch"></span>
-              </div>
-              <div class="cdd-divider"></div>
-              <div class="toggle-numeric">
-                <div class="toggle-text"><span class="toggle-label">Display name</span><span class="toggle-desc">Shown on your messages</span></div>
-                <input type="text" id="operatorNameInput" class="toggle-text-input" maxlength="24" value="OPPERATOR">
-              </div>
-            </div>
+
+          <div class="toggle toprow-toggle on" id="reasoningToggle" tabindex="0" role="switch" aria-checked="true" title="Think before answering">
+            <div class="toggle-text"><span class="toggle-label">Reasoning</span><span class="toggle-desc">Think before answering</span></div>
+            <span class="switch"></span>
           </div>
+          <div class="toggle toprow-toggle amber on" id="fastToggle" tabindex="0" role="switch" aria-checked="true" title="Route to the fastest provider">
+            <div class="toggle-text"><span class="toggle-label">Fast</span><span class="toggle-desc">Route to the fastest provider</span></div>
+            <span class="switch"></span>
+          </div>
+          <div class="toggle toprow-toggle blue" id="webSearchToggle" tabindex="0" role="switch" aria-checked="false" title="Let the model search the web">
+            <div class="toggle-text"><span class="toggle-label">Web search</span><span class="toggle-desc">Let the model search the web</span></div>
+            <span class="switch"></span>
+          </div>
+          <div class="toggle toprow-toggle toprow-toggle-num on" id="maxTokensToggle" tabindex="0" role="switch" aria-checked="true" title="Cap output tokens per request">
+            <div class="toggle-text"><span class="toggle-label">max_tokens</span><span class="toggle-desc">Cap output tokens per request</span></div>
+            <input type="number" id="maxTokensInput" class="toggle-num-input" min="1" max="65536" step="256" value="4096">
+            <span class="switch"></span>
+          </div>
+          <div class="toggle toprow-toggle" id="autoPersonalityToggle" tabindex="0" role="switch" aria-checked="false" title="Automatically jailbreaks the model through a system prompt">
+            <div class="toggle-text"><span class="toggle-label">AutoJailbreak</span><span class="toggle-desc">Automatically jailbreaks the model through a system prompt.</span></div>
+            <span class="switch"></span>
+          </div>
+
           <div class="tool-live" id="toolLive" style="display:none;"><span class="pip"></span> <span id="toolLiveText">Idle</span></div>
         </div>
+
 
         <div class="attach-row" id="attachRow"></div>
 
@@ -1811,7 +1843,7 @@ const AUTO_PERSONALITY_MAP = {
 
 const state = {
   sidebarOpen: window.innerWidth > 900,
-  reasoningMode: false,
+  reasoningMode: true,
   fastMode: true,
   webSearch: false,
   apiKey: getCookie(KEY_COOKIE),
@@ -1842,6 +1874,9 @@ const el = {
   sessionList: document.getElementById('sessionList'),
   sessionSearch: document.getElementById('sessionSearch'),
   newSessionBtn: document.getElementById('newSessionBtn'),
+  exportChatBtn: document.getElementById('exportChatBtn'),
+  importChatBtn: document.getElementById('importChatBtn'),
+  importChatInput: document.getElementById('importChatInput'),
   chatScroll: document.getElementById('chatScroll'),
   chatInner: document.getElementById('chatInner'),
   scrollBottomBtn: document.getElementById('scrollBottomBtn'),
@@ -1856,10 +1891,6 @@ const el = {
   maxTokensToggle: document.getElementById('maxTokensToggle'),
   autoPersonalityToggle: document.getElementById('autoPersonalityToggle'),
   operatorNameInput: document.getElementById('operatorNameInput'),
-  optionsPopover: document.getElementById('optionsPopover'),
-  optionsTrigger: document.getElementById('optionsTrigger'),
-  optionsMenu: document.getElementById('optionsMenu'),
-  optionsBadge: document.getElementById('optionsBadge'),
   toolLive: document.getElementById('toolLive'),
   attachBtn: document.getElementById('attachBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -2357,7 +2388,6 @@ function bindToggle(node, key, onChange){
     node.classList.toggle('on', state[key]);
     node.setAttribute('aria-checked', String(state[key]));
     saveSettings();
-    updateOptionsBadge();
     if (onChange) onChange(state[key]);
   };
   node.addEventListener('click', activate);
@@ -2456,33 +2486,6 @@ function syncPresetSelectToPrompt(){
   refreshDropdown(el.systemPresetSelect);
 }
 
-function updateOptionsBadge(){
-  const count = [state.reasoningMode, state.webSearch, state.autoPersonality, !state.maxTokensEnabled].filter(Boolean).length;
-  if (count > 0){
-    el.optionsBadge.textContent = String(count);
-    el.optionsBadge.style.display = 'flex';
-  } else {
-    el.optionsBadge.style.display = 'none';
-  }
-}
-updateOptionsBadge();
-
-function openOptionsPopover(){
-  positionDropdownMenu(el.optionsTrigger, el.optionsMenu);
-  el.optionsPopover.classList.add('open');
-  document.addEventListener('click', onOptionsOutside);
-}
-function closeOptionsPopover(){
-  el.optionsPopover.classList.remove('open');
-  document.removeEventListener('click', onOptionsOutside);
-}
-function onOptionsOutside(e){ if (!el.optionsPopover.contains(e.target)) closeOptionsPopover(); }
-el.optionsTrigger.addEventListener('click', () => {
-  if (el.optionsPopover.classList.contains('open')) closeOptionsPopover();
-  else openOptionsPopover();
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && el.optionsPopover.classList.contains('open')) closeOptionsPopover(); });
-
 /* ============================================================
    SIDEBAR TOGGLE
 ============================================================ */
@@ -2516,6 +2519,159 @@ function createSession(name){
 }
 function currentSession(){ return state.sessions.find(s => s.id === state.activeSessionId); }
 function ensureSession(){ if (!state.activeSessionId) createSession(null); }
+
+/* ============================================================
+   EXPORT / IMPORT — chat history as portable JSON. Export takes
+   the active session's messages down to their essential fields
+   (role + raw text + a few display extras); import accepts that
+   same shape back, plus a couple of looser shapes (a full
+   multi-session backup, or a bare array of {role, content}
+   messages) so it isn't picky about exactly where a JSON file
+   came from. HTML is never trusted from an imported file — every
+   imported message is re-rendered through the current
+   renderMarkdownLite() from its raw text, the same principle as
+   the legacy-chat migration above.
+============================================================ */
+function serializeSessionForExport(s){
+  return {
+    schema: 'mainframeopsec-chat-export',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    title: s.title,
+    messages: (s.messages || [])
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({
+        role: m.role,
+        raw: m.raw,
+        time: m.time,
+        modelLabel: m.modelLabel,
+        citations: m.citations,
+        usage: m.usage,
+      })),
+  };
+}
+
+function exportActiveSession(){
+  const s = currentSession();
+  if (!s || !s.messages || s.messages.length === 0){
+    systemBubble('No active session with messages to export.');
+    return;
+  }
+  let json;
+  try {
+    json = JSON.stringify(serializeSessionForExport(s), null, 2);
+  } catch (e) {
+    systemBubble(`Export failed: ${e.message || 'could not serialize this session'}.`);
+    return;
+  }
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const safeTitle = (s.title || 'session').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'session';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeTitle}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Builds a real session object from an arbitrary array of imported
+// message-like records. Anything that isn't a recognizable user/
+// assistant message with actual text is silently skipped rather than
+// aborting the whole import — one bad entry in a hand-edited file
+// shouldn't sink the rest of it.
+function buildSessionFromImportedMessages(title, rawMessages){
+  const messages = [];
+  (Array.isArray(rawMessages) ? rawMessages : []).forEach(m => {
+    if (!m || typeof m !== 'object') return;
+    const role = m.role === 'user' || m.role === 'assistant' ? m.role : null;
+    if (!role) return;
+    const text = typeof m.raw === 'string' ? m.raw
+      : typeof m.content === 'string' ? m.content
+      : Array.isArray(m.content) ? (m.content.find(p => p && p.type === 'text' && typeof p.text === 'string') || {}).text
+      : null;
+    if (!text) return;
+    let html;
+    try { html = renderMarkdownLite(text); } catch (e) { html = escapeHtml(text); }
+    messages.push({
+      role,
+      raw: text,
+      apiContent: text,
+      html,
+      time: typeof m.time === 'string' ? m.time : '',
+      hash: randomHash(),
+      modelLabel: typeof m.modelLabel === 'string' ? m.modelLabel : undefined,
+      citations: Array.isArray(m.citations) ? m.citations : undefined,
+      usage: (m.usage && typeof m.usage === 'object') ? m.usage : undefined,
+    });
+  });
+  return {
+    id: 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    code: 'SESS-' + Math.floor(4000 + Math.random() * 900),
+    title: (typeof title === 'string' && title.trim()) ? title.trim().slice(0, 80) : 'Imported Session',
+    named: true,
+    tag: 'active',
+    messages,
+  };
+}
+
+// Accepts, in order of preference:
+//   1. A single exported session: { title, messages: [...] }
+//   2. A full multi-session backup: { sessions: [{ title, messages }, ...] }
+//   3. A bare array of messages: [{ role, raw|content }, ...]
+// Anything else raises so the caller can show a clear error instead
+// of silently importing nothing.
+function importSessionsFromData(data){
+  const built = [];
+  if (Array.isArray(data)){
+    built.push(buildSessionFromImportedMessages('Imported Session', data));
+  } else if (data && Array.isArray(data.sessions)){
+    data.sessions.forEach(s => built.push(buildSessionFromImportedMessages(s && s.title, s && s.messages)));
+  } else if (data && Array.isArray(data.messages)){
+    built.push(buildSessionFromImportedMessages(data.title, data.messages));
+  } else {
+    throw new Error('unrecognized chat JSON format');
+  }
+  const withContent = built.filter(s => s.messages.length > 0);
+  withContent.forEach(s => state.sessions.unshift(s));
+  return withContent;
+}
+
+function handleImportFiles(files){
+  Array.from(files || []).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let imported;
+      try {
+        const data = JSON.parse(reader.result);
+        imported = importSessionsFromData(data);
+      } catch (e) {
+        systemBubble(`Import failed for ${file.name}: ${e.message || 'invalid JSON'}.`);
+        return;
+      }
+      if (imported.length === 0){
+        systemBubble(`${file.name} didn't contain any importable messages.`);
+        return;
+      }
+      renderSessionList();
+      saveSessions();
+      setActiveSession(imported[0].id);
+      const total = imported.reduce((n, s) => n + s.messages.length, 0);
+      systemBubble(`Imported ${imported.length} session${imported.length === 1 ? '' : 's'} (${total} message${total === 1 ? '' : 's'}) from ${file.name}.`);
+    };
+    reader.onerror = () => systemBubble(`Could not read ${file.name}.`);
+    reader.readAsText(file);
+  });
+}
+
+el.exportChatBtn.addEventListener('click', exportActiveSession);
+el.importChatBtn.addEventListener('click', () => el.importChatInput.click());
+el.importChatInput.addEventListener('change', () => {
+  handleImportFiles(el.importChatInput.files);
+  el.importChatInput.value = '';
+});
 
 // Cheap by design: walks backward from the end of a session's message
 // list (usually just 1-2 steps) to find the last usage object the API
@@ -3671,7 +3827,7 @@ migrateLegacyMessageHtml();
 
 const savedSettings = loadSettings();
 if (savedSettings){
-  state.reasoningMode = !!savedSettings.reasoningMode;
+  state.reasoningMode = savedSettings.reasoningMode !== false;
   state.fastMode = savedSettings.fastMode !== false;
   state.webSearch = !!savedSettings.webSearch;
   state.systemPrompt = savedSettings.systemPrompt || '';
@@ -3697,8 +3853,6 @@ if (savedSettings){
   el.autoPersonalityToggle.classList.toggle('on', state.autoPersonality);
   el.autoPersonalityToggle.setAttribute('aria-checked', String(state.autoPersonality));
   setPersonalityLock(state.autoPersonality);
-
-  updateOptionsBadge();
 }
 
 renderSessionList();
