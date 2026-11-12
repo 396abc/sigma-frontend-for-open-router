@@ -1144,7 +1144,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
           <option value="">Add API key to load models…</option>
         </select>
       </div>
-      <div class="operator" id="connectionCard" tabindex="0" role="button" aria-label="Manage OpenRouter API key">
+      <div class="operator" id="connectionCard" tabindex="0" role="button" aria-label="Manage API key">
         <div class="operator-avatar" id="connectionAvatar">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5l11 11M14 4l-2 2m8 2l-2 2M6 16l-2 2m6-12L4 12l8 8 6-6-8-8z"/></svg>
         </div>
@@ -1161,9 +1161,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-head">
         <span class="modal-glyph" id="modalGlyph">&gt;_</span>
-        <h3 id="modalTitle">Connect OpenRouter</h3>
+        <h3 id="modalTitle">Connect API</h3>
       </div>
-      <p class="modal-copy" id="modalCopy">Paste your OpenRouter API key. It's stored only in this browser and sent directly to openrouter.ai — never through a third-party server.</p>
+      <p class="modal-copy" id="modalCopy">Paste an OpenRouter (sk-or-…) or NanoGPT API key. It's stored only in this browser and sent directly to the provider — never through a third-party server.</p>
       <input type="text" class="modal-input" id="modalInput" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false">
       <div class="modal-error" id="modalError"></div>
       <div class="modal-actions">
@@ -1171,7 +1171,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
         <button class="modal-btn secondary" id="modalSecondary" style="display:none;">Clear Key</button>
         <button class="modal-btn primary" id="modalConfirm">Connect</button>
       </div>
-      <div class="modal-hint">Don't have a key? <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get one at openrouter.ai/keys</a></div>
+      <div class="modal-hint">Don't have a key? Get one at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> or <a href="https://nano-gpt.com/api" target="_blank" rel="noopener">nano-gpt.com/api</a></div>
     </div>
   </div>
 
@@ -1388,6 +1388,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    STATE
 ============================================================ */
 const OR_BASE = 'https://openrouter.ai/api/v1';
+const NANO_BASE = 'https://api.nano-gpt.com/api/v1';
+// provider is picked from the key itself: sk-or-… = OpenRouter, anything else = NanoGPT
+const isNano = (key = state.apiKey) => !!key && !key.startsWith('sk-or-');
+const apiBase = (key) => isNano(key) ? NANO_BASE : OR_BASE;
+const providerName = (key) => isNano(key) ? 'NanoGPT' : 'OpenRouter';
+
+// returns key info in OpenRouter's /key shape ({ label, limit_remaining })
+async function fetchKeyInfo(key){
+  if (!isNano(key)){
+    const res = await fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${key}` } });
+    if (!res.ok){
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error?.message || `Key check failed (HTTP ${res.status}).`);
+    }
+    return (await res.json()).data || null;
+  }
+  let res;
+  try {
+    res = await fetch('https://nano-gpt.com/api/check-balance', { method: 'POST', headers: { 'x-api-key': key } });
+  } catch (e) {
+    // balance endpoint blocked by CORS — accept the key, chat will 401 if it's bad
+    return { label: 'NanoGPT Key', limit_remaining: null };
+  }
+  if (res.status === 401 || res.status === 403) throw new Error('Invalid NanoGPT API key.');
+  const d = res.ok ? await res.json().catch(() => ({})) : {};
+  return { label: 'NanoGPT Key', limit_remaining: d.usd_balance ?? null };
+}
 const KEY_COOKIE = 'mainframeopsec_or_key';
 const SESSIONS_STORAGE = 'mainframeopsec_sessions';
 const SETTINGS_STORAGE = 'mainframeopsec_settings';
@@ -1430,7 +1457,7 @@ const TIPS = [
   { title: 'Auto jailbreak', body: 'Under the options tab, there is a toggle to automatically jailbreak a model. When turned on, all supported models will be jailbroken. This is controled via the system prompt..' },
   { title: 'Hackerman', body: 'The mainframe has been accessed.' },
   { title: 'Editing Messages', body: 'You can also edit messages and make the AI hallucinate.' },
-  { title: 'Getting the API key', body: 'Go to https://openrouter.ai/ and get an api key, then add it in the bottom left. Youre literally all set after that' },
+  { title: 'Getting the API key', body: 'Go to https://openrouter.ai/ or https://nano-gpt.com/api and get an api key, then add it in the bottom left. Youre literally all set after that' },
   // ← add more tips here, same shape as above
 ];
 // Hardcoded, editable system-prompt presets. Picking one overwrites
@@ -1708,9 +1735,9 @@ function openModal(mode){
 
   if (mode === 'apikey'){
     el.modalGlyph.textContent = '>_';
-    el.modalTitle.textContent = state.apiKey ? 'Connection' : 'Connect OpenRouter';
-    el.modalCopy.textContent = "Paste your OpenRouter API key. It's stored only in this browser (localStorage) and sent directly to openrouter.ai — never through any third-party server.";
-    el.modalInput.placeholder = 'sk-or-v1-...';
+    el.modalTitle.textContent = state.apiKey ? 'Connection' : 'Connect API';
+    el.modalCopy.textContent = "Paste an OpenRouter (sk-or-…) or NanoGPT API key. It's stored only in this browser and sent directly to the provider — never through any third-party server.";
+    el.modalInput.placeholder = 'sk-or-v1-... or NanoGPT key';
     el.modalInput.type = 'password';
     el.modalConfirm.textContent = 'Connect';
     if (state.apiKey){
@@ -1727,7 +1754,7 @@ function openModal(mode){
   } else if (mode === 'addmodel'){
     el.modalGlyph.textContent = '#';
     el.modalTitle.textContent = 'Add Model';
-    el.modalCopy.textContent = 'Paste any OpenRouter model slug (e.g. anthropic/claude-sonnet-4.6). Browse the full catalog at openrouter.ai/models.';
+    el.modalCopy.textContent = `Paste any ${providerName()} model id (e.g. anthropic/claude-sonnet-4.6).`;
     el.modalInput.placeholder = 'provider/model-slug';
     el.modalInput.type = 'text';
     el.modalConfirm.textContent = 'Add Model';
@@ -1791,7 +1818,7 @@ function renderConnection(){
   if (state.keyInfo){
     const remaining = state.keyInfo.limit_remaining;
     el.connectionAvatar.className = 'operator-avatar connected';
-    el.connectionTitle.textContent = state.keyInfo.label || 'OpenRouter Key';
+    el.connectionTitle.textContent = state.keyInfo.label || `${providerName()} Key`;
     el.connectionSub.className = 'operator-clearance connected';
     el.connectionSub.textContent = (remaining == null) ? 'Connected · unlimited' : `Connected · $${Number(remaining).toFixed(2)} left`;
   } else {
@@ -1804,21 +1831,17 @@ function renderConnection(){
 
 async function connectApiKey(key){
   try {
-    const res = await fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${key}` } });
-    if (!res.ok){
-      const body = await res.json().catch(() => ({}));
-      el.modalError.textContent = body?.error?.message || `Key check failed (HTTP ${res.status}).`;
-      return false;
-    }
-    const data = await res.json();
+    let info;
+    try { info = await fetchKeyInfo(key); }
+    catch (err) { el.modalError.textContent = err.message; return false; }
     state.apiKey = key;
-    state.keyInfo = data.data || null;
+    state.keyInfo = info;
     setCookie(KEY_COOKIE, key, 365);
     renderConnection();
     await fetchModels();
     return true;
   } catch (e) {
-    el.modalError.textContent = 'Network error reaching openrouter.ai — check your connection.';
+    el.modalError.textContent = `Network error reaching ${providerName(key)} — check your connection.`;
     return false;
   }
 }
@@ -1847,7 +1870,7 @@ function stripVariant(id){
 async function fetchModels(){
   el.sidebarModel.innerHTML = '<option value="">Loading models…</option>';
   try {
-    const res = await fetch(`${OR_BASE}/models`, {
+    const res = await fetch(`${apiBase()}/models${isNano() ? '?detailed=true' : ''}`, {
       headers: state.apiKey ? { Authorization: `Bearer ${state.apiKey}` } : {},
     });
     if (!res.ok) throw new Error('models fetch failed: ' + res.status);
@@ -3218,15 +3241,20 @@ async function streamCompletion(session){
     model: state.selectedModelId,
     messages: buildApiMessages(session.messages),
     stream: true,
-    usage: { include: true },
   };
+  const nano = isNano();
+  if (nano) body.stream_options = { include_usage: true };
+  else body.usage = { include: true };
   if (state.maxTokensEnabled) body.max_tokens = state.maxTokens;
   if (state.systemPrompt && state.systemPrompt.trim()){
     body.messages.unshift({ role: 'system', content: state.systemPrompt.trim() });
   }
-  if (state.reasoningMode) body.reasoning = { enabled: true, effort: 'medium' };
+  if (state.reasoningMode) body.reasoning = nano ? { effort: 'medium' } : { enabled: true, effort: 'medium' };
   if (state.fastMode) body.provider = { sort: 'throughput' };
-  if (state.webSearch) body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
+  if (state.webSearch){
+    if (nano) body.web_search = true;
+    else body.tools = [{ type: 'openrouter:web_search', parameters: { max_results: 5 } }];
+  }
   state.lastPayload = body;
   if (el.payloadPanel.classList.contains('open')) refreshPayloadPanel();
 
@@ -3237,7 +3265,7 @@ async function streamCompletion(session){
   let node = null, hash = null, cursor = null;
 
   try {
-    const res = await fetch(`${OR_BASE}/chat/completions`, {
+    const res = await fetch(`${apiBase()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${state.apiKey}`,
@@ -3331,8 +3359,9 @@ async function streamCompletion(session){
             contentText += choice.delta.content;
             target.textContent = contentText;
           }
-          if (choice.delta.reasoning){
-            reasoningText += choice.delta.reasoning;
+          const rDelta = choice.delta.reasoning || choice.delta.reasoning_content;
+          if (rDelta){
+            reasoningText += rDelta;
             reasonWrap.style.display = 'block';
             reasonWrap.classList.add('open');
             reasonBody.textContent = reasoningText;
@@ -3396,7 +3425,7 @@ async function streamCompletion(session){
       }
     } else {
       typingNode.remove();
-      systemBubble(`Connection error: ${e.message || 'could not reach openrouter.ai'}`);
+      systemBubble(`Connection error: ${e.message || 'could not reach ' + providerName()}`);
     }
   }
 
@@ -3515,10 +3544,9 @@ updateContextMeterForSession(currentSession());
 updateSidebarClass();
 renderConnection();
 if (state.apiKey){
-  fetch(`${OR_BASE}/key`, { headers: { Authorization: `Bearer ${state.apiKey}` } })
-    .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(data => {
-      state.keyInfo = data.data || null;
+  fetchKeyInfo(state.apiKey)
+    .then(info => {
+      state.keyInfo = info;
       renderConnection();
       return fetchModels();
     })
