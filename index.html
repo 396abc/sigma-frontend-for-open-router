@@ -1389,6 +1389,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 ============================================================ */
 const OR_BASE = 'https://openrouter.ai/api/v1';
 const NANO_BASE = 'https://api.nano-gpt.com/api/v1';
+const NANO_DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
 // provider is picked from the key itself: sk-or-… = OpenRouter, anything else = NanoGPT
 const isNano = (key = state.apiKey) => !!key && !key.startsWith('sk-or-');
 const apiBase = (key) => isNano(key) ? NANO_BASE : OR_BASE;
@@ -1887,7 +1888,10 @@ async function fetchModels(){
 
 function populateModelSelect(){
   el.sidebarModel.innerHTML = '';
-  const curated = CURATED_MODEL_IDS.filter(id => state.models.has(id));
+  if (isNano() && !state.models.has(NANO_DEFAULT_MODEL)){
+    state.models.set(NANO_DEFAULT_MODEL, { id: NANO_DEFAULT_MODEL, name: 'DeepSeek V4.1 Flash', context_length: 1000000 });
+  }
+  const curated = (isNano() ? [NANO_DEFAULT_MODEL] : CURATED_MODEL_IDS).filter(id => state.models.has(id));
   curated.forEach(id => {
     const m = state.models.get(id);
     const opt = document.createElement('option');
