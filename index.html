@@ -553,6 +553,51 @@ body{
 .bubble code.inline:hover{ background: rgba(61,255,160,0.16); }
 .bubble code.inline.copied{ background: var(--phosphor); color: #06120c; }
 
+.bubble .md-h{ color: var(--text-hi); font-family: var(--font-display); line-height: 1.3; margin: 16px 0 8px; font-weight: 700; }
+.bubble .md-h:first-child{ margin-top: 0; }
+.bubble h1.md-h{ font-size: 1.45em; border-bottom: 1px solid var(--hair-strong); padding-bottom: 6px; }
+.bubble h2.md-h{ font-size: 1.25em; border-bottom: 1px solid var(--hair); padding-bottom: 4px; }
+.bubble h3.md-h{ font-size: 1.1em; }
+.bubble h4.md-h, .bubble h5.md-h{ font-size: 1em; }
+.bubble h6.md-h{ font-size: .9em; color: var(--text-mute); }
+.bubble ol{ margin: 6px 0; padding-left: 24px; }
+.bubble ul ul, .bubble ul ol, .bubble ol ul, .bubble ol ol{ margin: 4px 0; }
+.bubble li > p{ margin: 0 0 6px; }
+.bubble li::marker{ color: var(--phosphor); }
+.bubble li.task{ list-style: none; margin-left: -16px; }
+.bubble li.task input{ accent-color: var(--phosphor); margin: 0 6px 0 0; vertical-align: -1px; }
+.bubble em{ color: var(--text-hi); }
+.bubble del{ color: var(--text-mute); }
+.bubble mark{ background: rgba(255,180,84,0.2); color: var(--amber); padding: 0 3px; border-radius: 3px; }
+.bubble kbd{ font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border: 1px solid var(--hair-strong); border-bottom-width: 2px; border-radius: 4px; background: var(--void-2); }
+.bubble a{ color: var(--phosphor); text-decoration: underline; text-decoration-color: var(--phosphor-dim); text-underline-offset: 2px; word-break: break-word; }
+.bubble a:hover{ text-decoration-color: var(--phosphor); }
+.bubble img{ max-width: 100%; border-radius: var(--r-sm); border: 1px solid var(--hair); margin: 6px 0; }
+.bubble hr{ border: 0; border-top: 1px solid var(--hair-strong); margin: 14px 0; }
+.bubble blockquote{ margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--phosphor-dim); color: var(--text-mute); background: rgba(61,255,160,0.03); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.bubble blockquote p{ margin: 4px 0; }
+.bubble .md-alert{ color: var(--text); }
+.bubble .md-alert-title{ font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin: 2px 0 4px; }
+.bubble .md-alert-note{ border-left-color: #58a6ff; } .bubble .md-alert-note .md-alert-title{ color: #58a6ff; }
+.bubble .md-alert-tip{ border-left-color: var(--phosphor); } .bubble .md-alert-tip .md-alert-title{ color: var(--phosphor); }
+.bubble .md-alert-important{ border-left-color: #b98bff; } .bubble .md-alert-important .md-alert-title{ color: #b98bff; }
+.bubble .md-alert-warning{ border-left-color: var(--amber); } .bubble .md-alert-warning .md-alert-title{ color: var(--amber); }
+.bubble .md-alert-caution{ border-left-color: var(--danger); } .bubble .md-alert-caution .md-alert-title{ color: var(--danger); }
+.bubble .table-wrap{ overflow-x: auto; margin: 10px 0; border: 1px solid var(--hair-strong); border-radius: var(--r-sm); }
+.bubble table{ border-collapse: collapse; width: 100%; font-size: 13px; }
+.bubble th, .bubble td{ padding: 7px 11px; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; }
+.bubble th + th, .bubble td + td{ border-left: 1px solid var(--hair); }
+.bubble th{ background: rgba(61,255,160,0.06); color: var(--text-hi); font-family: var(--font-display); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.bubble tbody tr:last-child td{ border-bottom: 0; }
+.bubble tbody tr:nth-child(even){ background: rgba(255,255,255,0.015); }
+.bubble tbody tr:hover{ background: rgba(61,255,160,0.04); }
+.bubble .fn-ref{ color: var(--phosphor); font-size: .75em; cursor: help; }
+.bubble .footnotes{ margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--hair); font-size: 12px; color: var(--text-mute); }
+.bubble .footnotes ol{ margin: 0; }
+.bubble .math{ font-family: var(--font-mono); color: var(--text-hi); }
+.bubble .math-wrap{ margin: 10px 0; overflow-x: auto; overflow-y: hidden; text-align: center; }
+.bubble .math-block{ display: block; }
+
 .codeblock{
   margin: 10px 0; border-radius: var(--r-sm); overflow:hidden;
   border: 1px solid var(--hair-strong);
@@ -2740,7 +2785,7 @@ function copyText(text){
 ============================================================ */
 function extractCodeBlocks(raw){
   const lines = raw.split(/\r\n|\r|\n/);
-  const fenceOpenRe = /^ {0,3}(`{3,}|~{3,})[ \t]*([^\n`]*?)[ \t]*$/;
+  const fenceOpenRe = /^([ \t]*)(`{3,}|~{3,})[ \t]*([^\n`]*?)[ \t]*$/;
   const blocks = [];
   const outLines = [];
   let i = 0;
@@ -2748,21 +2793,22 @@ function extractCodeBlocks(raw){
   while (i < lines.length){
     const m = lines[i].match(fenceOpenRe);
     if (m){
-      const fenceChar = m[1][0];
-      const fenceLen = m[1].length;
-      const lang = (m[2] || '').trim();
-      const closeRe = new RegExp('^ {0,3}' + fenceChar + '{' + fenceLen + ',}[ \\t]*$');
+      const fenceIndent = m[1];
+      const fenceChar = m[2][0];
+      const fenceLen = m[2].length;
+      const lang = (m[3] || '').trim();
+      const closeRe = new RegExp('^[ \\t]*' + fenceChar + '{' + fenceLen + ',}[ \\t]*$');
       const codeLines = [];
       i++;
       let closed = false;
       while (i < lines.length){
         if (closeRe.test(lines[i])){ closed = true; i++; break; }
-        codeLines.push(lines[i]);
+        codeLines.push(lines[i].startsWith(fenceIndent) ? lines[i].slice(fenceIndent.length) : lines[i].replace(/^[ \t]+/, ''));
         i++;
       }
       const idx = blocks.length;
       blocks.push({ lang: lang || 'text', code: codeLines.join('\n'), incomplete: !closed });
-      outLines.push(`\u0000CODEBLOCK${idx}\u0000`);
+      outLines.push(`${fenceIndent}\u0000CODEBLOCK${idx}\u0000`);
     } else {
       outLines.push(lines[i]);
       i++;
@@ -2771,40 +2817,312 @@ function extractCodeBlocks(raw){
   return { text: outLines.join('\n'), blocks };
 }
 
-function renderMarkdownLite(raw){
-  const { text, blocks } = extractCodeBlocks(raw);
-  const codeLineRe = /^\u0000CODEBLOCK(\d+)\u0000$/;
-  const lines = text.split('\n');
+/* ============================================================
+   MARKDOWN — full GFM-style renderer: headings (ATX + setext),
+   paragraphs, hard/soft breaks, bold/italic/strike/highlight,
+   inline + fenced code, links (inline, reference, auto, bare),
+   images, blockquotes (nested + GitHub [!NOTE] alerts), ordered/
+   unordered/nested/task lists, tables with alignment, horizontal
+   rules, footnotes, a safe subset of inline HTML, and LaTeX math
+   ($…$, $$…$$, \(…\), \[…\]) rendered by KaTeX on demand.
+   Raw HTML outside that subset is escaped, never injected.
+============================================================ */
+const MD_SAFE_TAGS = 'br|b|i|u|s|em|strong|sub|sup|kbd|mark|small|ins|del|abbr|cite|q|var|samp';
+let mdRefs = {}, mdNotes = null;
 
-  let html = '';
-  let inList = false;
-  function closeList(){ if (inList){ html += '</ul>'; inList = false; } }
+function mdSafeUrl(url){
+  const u = url.trim();
+  if (/^(javascript|vbscript|data):/i.test(u) && !/^data:image\/(png|jpe?g|gif|webp);/i.test(u)) return '#';
+  return escapeHtml(u);
+}
+function mdLink(href, inner, title){
+  return `<a href="${mdSafeUrl(href)}" target="_blank" rel="noopener noreferrer"${title ? ` title="${escapeHtml(title)}"` : ''}>${inner}</a>`;
+}
+function mdMath(tex, display){
+  return `<span class="math${display ? ' math-block' : ''}" data-tex="${escapeHtml(tex.trim())}">${escapeHtml(tex.trim())}</span>`;
+}
 
-  lines.forEach(rawLine => {
-    const cbm = rawLine.match(codeLineRe);
-    if (cbm){
-      // Block-level markup — never nested inside a <p> or <li>.
-      closeList();
-      const b = blocks[Number(cbm[1])];
-      if (b) html += renderCodeBlock(b.lang, b.code, b.incomplete);
-      return;
-    }
+function mdInline(src){
+  const store = [];
+  const keep = h => `${store.push(h) - 1}`;
+  let s = src;
 
-    let line = escapeHtml(rawLine);
-    line = line.replace(/`([^`]+)`/g, '<code class="inline" title="Click to copy">$1</code>');
-    line = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // code spans, then math, then backslash escapes — each hidden from later passes
+  s = s.replace(/(`+)(?!`)([\s\S]*?[^`])\1(?!`)/g, (_, t, c) =>
+    keep(`<code class="inline" title="Click to copy">${escapeHtml(c.length > 2 && /^ .* $/.test(c) ? c.slice(1, -1) : c)}</code>`));
+  s = s.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => keep(mdMath(t, true)));
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, (_, t) => keep(mdMath(t, true)));
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => keep(mdMath(t, false)));
+  s = s.replace(/(^|[^\\$\w])\$(?=[^\s$])([^$\n]*?[^\s\\$])\$(?![\w$])/g, (_, p, t) => p + keep(mdMath(t, false)));
+  s = s.replace(/\$([^\s$\\])\$/g, (_, t) => keep(mdMath(t, false)));
+  s = s.replace(/\\([\\`*_{}\[\]()#+\-.!|~<>$=^])/g, (_, c) => keep(escapeHtml(c)));
 
-    if (/^\s*-\s+/.test(line)){
-      if (!inList){ html += '<ul>'; inList = true; }
-      html += `<li>${line.replace(/^\s*-\s+/, '')}</li>`;
-    } else {
-      closeList();
-      if (line.trim() !== '') html += `<p>${line}</p>`;
-    }
+  // images, links, footnote refs, autolinks, bare urls
+  const title = `(?:\\s+(?:"([^"]*)"|'([^']*)'))?`;
+  s = s.replace(new RegExp(`!\\[([^\\]]*)\\]\\(\\s*<?([^)\\s>]+)>?${title}\\s*\\)`, 'g'), (_, alt, url, t1, t2) =>
+    keep(`<img src="${mdSafeUrl(url)}" alt="${escapeHtml(alt)}"${t1 || t2 ? ` title="${escapeHtml(t1 || t2)}"` : ''} loading="lazy">`));
+  s = s.replace(/\[\^([^\]\s]+)\]/g, (m, id) => {
+    if (!mdNotes || !(id in mdNotes.defs)) return m;
+    if (!mdNotes.order.includes(id)) mdNotes.order.push(id);
+    const n = mdNotes.order.indexOf(id) + 1;
+    return keep(`<sup class="fn-ref" title="${escapeHtml(mdNotes.defs[id])}">[${n}]</sup>`);
   });
-  closeList();
+  s = s.replace(new RegExp(`\\[((?:[^\\[\\]]|\\[[^\\]]*\\])+)\\]\\(\\s*<?([^)\\s>]*)>?${title}\\s*\\)`, 'g'), (_, txt, url, t1, t2) =>
+    keep(mdLink(url, mdInline(txt), t1 || t2)));
+  s = s.replace(/\[((?:[^\[\]]|\[[^\]]*\])+)\](?:\s?\[([^\]]*)\])?/g, (m, txt, ref) => {
+    const r = mdRefs[(ref || txt).trim().toLowerCase()];
+    return r ? keep(mdLink(r.url, mdInline(txt), r.title)) : m;
+  });
+  s = s.replace(/<((?:https?|ftp|mailto):[^\s<>]+)>/gi, (_, u) => keep(mdLink(u, escapeHtml(u))));
+  s = s.replace(/<([^\s<>@]+@[^\s<>@]+\.[a-z]{2,})>/gi, (_, e) => keep(mdLink('mailto:' + e, escapeHtml(e))));
+  s = s.replace(/\b(?:https?:\/\/|www\.)[^\s<>"'`]*[^\s<>"'`.,:;!?)\]}*_~]/gi, u =>
+    keep(mdLink(/^www\./i.test(u) ? 'https://' + u : u, escapeHtml(u))));
+
+  s = escapeHtml(s);
+  // whitelisted attribute-free inline HTML
+  s = s.replace(new RegExp(`&lt;(\\/?)(${MD_SAFE_TAGS})\\s*\\/?&gt;`, 'gi'), (_, c, t) => `<${c}${t.toLowerCase()}>`);
+
+  s = s.replace(/(\*\*\*|___)(?=\S)([\s\S]*?\S)\1/g, '<strong><em>$2</em></strong>');
+  s = s.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^\w])__(?=\S)([\s\S]*?\S)__(?!\w)/g, '$1<strong>$2</strong>');
+  s = s.replace(/(^|[^*\w])\*(?=[^\s*])([\s\S]*?[^\s*])\*(?![*\w])/g, '$1<em>$2</em>');
+  s = s.replace(/(^|[^\w])_(?=[^\s_])([\s\S]*?[^\s_])_(?![\w])/g, '$1<em>$2</em>');
+  s = s.replace(/~~(?=\S)([\s\S]*?\S)~~/g, '<del>$1</del>');
+  s = s.replace(/==(?=[^\s=])([^=]*?[^\s=])==/g, '<mark>$1</mark>');
+  s = s.replace(/(?:\\| {2,})\n/g, '<br>').replace(/\n/g, '<br>');
+
+  for (let k = 0; k < 4 && /\d+/.test(s); k++){
+    s = s.replace(/(\d+)/g, (_, i) => store[Number(i)] ?? '');
+  }
+  return s;
+}
+
+const MD_RE = {
+  code:    /^\s*\u0000CODEBLOCK(\d+)\u0000\s*$/,
+  heading: /^ {0,3}(#{1,6})(?:\s+(.*?))?(?:\s+#+)?\s*$/,
+  hr:      /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/,
+  quote:   /^ {0,3}>/,
+  list:    /^([ \t]*)([-*+•]|\d{1,9}[.)])(?:[ \t]+(.*)|[ \t]*$)/,
+  tableSep:/^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)*\|?\s*$/,
+  math:    /^\s*(\$\$|\\\[)/,
+  setext:  /^ {0,3}(=+|-+)\s*$/,
+};
+const mdIndent = s => s.replace(/\t/g, '    ').match(/^ */)[0].length;
+function mdStartsBlock(lines, i){
+  const l = lines[i];
+  return MD_RE.code.test(l) || MD_RE.heading.test(l) || MD_RE.hr.test(l) || MD_RE.quote.test(l) ||
+         MD_RE.list.test(l) && !!l.match(MD_RE.list)[3] || MD_RE.math.test(l) ||
+         (l.includes('|') && i + 1 < lines.length && MD_RE.tableSep.test(lines[i + 1]) && lines[i + 1].includes('-'));
+}
+function mdSplitRow(line){
+  let l = line.trim();
+  if (l.startsWith('|')) l = l.slice(1);
+  if (l.endsWith('|') && !l.endsWith('\\|')) l = l.slice(0, -1);
+  const cells = []; let cur = '', tick = 0;
+  for (let i = 0; i < l.length; i++){
+    const c = l[i];
+    if (c === '\\' && l[i + 1] === '|'){ cur += '|'; i++; continue; }
+    if (c === '`') tick ^= 1;
+    if (c === '|' && !tick){ cells.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+function mdBlocks(lines, blocks){
+  let html = '', i = 0;
+  while (i < lines.length){
+    const line = lines[i];
+    if (!line.trim()){ i++; continue; }
+
+    let m;
+    if ((m = line.match(MD_RE.code))){
+      const b = blocks[Number(m[1])];
+      if (b) html += renderCodeBlock(b.lang, b.code, b.incomplete);
+      i++; continue;
+    }
+
+    if ((m = line.match(MD_RE.math))){
+      const close = m[1] === '$$' ? '$$' : '\\]';
+      let body = line.trim().slice(2);
+      let j = i;
+      while (!body.includes(close) && ++j < lines.length) body += '\n' + lines[j];
+      const end = body.indexOf(close);
+      const rest = end >= 0 ? body.slice(end + 2).trim() : '';
+      html += `<div class="math-wrap">${mdMath(end >= 0 ? body.slice(0, end) : body, true)}</div>`;
+      if (rest) html += `<p>${mdInline(rest)}</p>`;
+      i = j + 1; continue;
+    }
+
+    if ((m = line.match(MD_RE.heading))){
+      const n = m[1].length;
+      html += `<h${n} class="md-h">${mdInline(m[2] || '')}</h${n}>`;
+      i++; continue;
+    }
+
+    if (MD_RE.hr.test(line)){ html += '<hr>'; i++; continue; }
+
+    if (MD_RE.quote.test(line)){
+      const q = [];
+      while (i < lines.length && lines[i].trim() && (MD_RE.quote.test(lines[i]) || !mdStartsBlock(lines, i))){
+        q.push(lines[i].replace(/^ {0,3}> ?/, '')); i++;
+      }
+      const alert = q[0] && q[0].match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i);
+      if (alert){
+        q.shift();
+        const t = alert[1].toLowerCase();
+        html += `<blockquote class="md-alert md-alert-${t}"><div class="md-alert-title">${t}</div>${mdBlocks(q, blocks)}</blockquote>`;
+      } else html += `<blockquote>${mdBlocks(q, blocks)}</blockquote>`;
+      continue;
+    }
+
+    if (line.includes('|') && i + 1 < lines.length && MD_RE.tableSep.test(lines[i + 1]) && lines[i + 1].includes('-')){
+      const head = mdSplitRow(line);
+      const aligns = mdSplitRow(lines[i + 1]).map(c => /^:-+:$/.test(c) ? 'center' : /-:$/.test(c) ? 'right' : /^:-/.test(c) ? 'left' : '');
+      const cell = (tag, c, k) => `<${tag}${aligns[k] ? ` style="text-align:${aligns[k]}"` : ''}>${mdInline(c || '')}</${tag}>`;
+      let t = `<div class="table-wrap"><table><thead><tr>${head.map((c, k) => cell('th', c, k)).join('')}</tr></thead><tbody>`;
+      i += 2;
+      while (i < lines.length && lines[i].trim() && lines[i].includes('|') && !MD_RE.code.test(lines[i])){
+        const row = mdSplitRow(lines[i]);
+        t += `<tr>${head.map((_, k) => cell('td', row[k], k)).join('')}</tr>`;
+        i++;
+      }
+      html += t + '</tbody></table></div>';
+      continue;
+    }
+
+    if ((m = line.match(MD_RE.list)) && (m[3] !== undefined || (i + 1 < lines.length && mdIndent(lines[i + 1]) > mdIndent(line)))){
+      const base = mdIndent(m[1]);
+      const ordered = /\d/.test(m[2]);
+      const start = ordered ? parseInt(m[2], 10) : 1;
+      const items = [];
+      let loose = false;
+      while (i < lines.length){
+        const l = lines[i];
+        const lm = l.match(MD_RE.list);
+        if (lm && mdIndent(lm[1]) <= base + 1 && /\d/.test(lm[2]) === ordered){
+          const contentIndent = mdIndent(lm[1]) + lm[2].length + 1;
+          items.push({ lines: [lm[3] || ''], contentIndent });
+          i++; continue;
+        }
+        if (!items.length) break;
+        const item = items[items.length - 1];
+        if (!l.trim()){
+          let k = i + 1;
+          while (k < lines.length && !lines[k].trim()) k++;
+          if (k >= lines.length) { i = k; break; }
+          const nx = lines[k], nm = nx.match(MD_RE.list);
+          const nextIsSibling = nm && mdIndent(nm[1]) <= base + 1 && /\d/.test(nm[2]) === ordered;
+          if (mdIndent(nx) > base && !nextIsSibling || (mdIndent(nx) >= item.contentIndent)){
+            for (; i < k; i++) item.lines.push('');
+            loose = true; continue;
+          }
+          if (nextIsSibling){ loose = true; i = k; continue; }
+          break;
+        }
+        if (mdIndent(l) > base){
+          const strip = Math.min(mdIndent(l), item.contentIndent);
+          item.lines.push(l.replace(/\t/g, '    ').slice(strip));
+          i++; continue;
+        }
+        if (!mdStartsBlock(lines, i) && item.lines[item.lines.length - 1].trim()){
+          item.lines.push(l.trim()); i++; continue; // lazy continuation
+        }
+        break;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      const hasTask = items.some(it => /^\[[ xX]\]\s/.test(it.lines[0]));
+      html += `<${tag}${ordered && start !== 1 ? ` start="${start}"` : ''}${hasTask ? ' class="task-list"' : ''}>`;
+      items.forEach(it => {
+        let task = '';
+        const tm = it.lines[0].match(/^\[([ xX])\]\s+/);
+        if (tm){
+          task = `<input type="checkbox" disabled${tm[1] !== ' ' ? ' checked' : ''}> `;
+          it.lines[0] = it.lines[0].slice(tm[0].length);
+        }
+        let inner = mdBlocks(it.lines, blocks);
+        if (!loose) inner = inner.replace(/^<p>([\s\S]*?)<\/p>/, '$1');
+        html += `<li${tm ? ' class="task"' : ''}>${task}${inner}</li>`;
+      });
+      html += `</${tag}>`;
+      continue;
+    }
+
+    // paragraph (+ setext heading)
+    const para = [];
+    while (i < lines.length && lines[i].trim()){
+      if (para.length && MD_RE.setext.test(lines[i])) break;
+      if (para.length && mdStartsBlock(lines, i)) break;
+      para.push(lines[i].replace(/^\s+/, '')); i++;
+    }
+    if (i < lines.length && para.length && MD_RE.setext.test(lines[i]) && lines[i].trim()){
+      const n = lines[i].trim()[0] === '=' ? 1 : 2;
+      html += `<h${n} class="md-h">${mdInline(para.join('\n'))}</h${n}>`;
+      i++; continue;
+    }
+    html += `<p>${mdInline(para.join('\n').replace(/\s+$/, ''))}</p>`;
+  }
   return html;
 }
+
+function renderMarkdownLite(raw){
+  const { text, blocks } = extractCodeBlocks(raw);
+  const lines = text.split('\n');
+  const body = [];
+  mdRefs = {}; mdNotes = { defs: {}, order: [] };
+
+  // pull out link-reference + footnote definitions (they can appear anywhere)
+  for (let i = 0; i < lines.length; i++){
+    let m;
+    if ((m = lines[i].match(/^ {0,3}\[\^([^\]\s]+)\]:\s*(.*)$/))){
+      let t = m[2];
+      while (i + 1 < lines.length && /^( {2,}|\t)\S/.test(lines[i + 1])) t += ' ' + lines[++i].trim();
+      mdNotes.defs[m[1]] = t; continue;
+    }
+    if ((m = lines[i].match(/^ {0,3}\[([^\]^][^\]]*)\]:\s*<?(\S+?)>?(?:\s+["'(](.*)["')])?\s*$/))){
+      mdRefs[m[1].trim().toLowerCase()] = { url: m[2], title: m[3] }; continue;
+    }
+    body.push(lines[i]);
+  }
+
+  let html = mdBlocks(body, blocks);
+  if (mdNotes.order.length){
+    html += '<section class="footnotes"><ol>' +
+      mdNotes.order.map(id => `<li>${mdInline(mdNotes.defs[id])}</li>`).join('') + '</ol></section>';
+  }
+  mdRefs = {}; mdNotes = null;
+  return html;
+}
+
+/* KaTeX loads only once a message actually contains math */
+let katexLoading = false, mathQueued = false;
+function renderMath(){
+  mathQueued = false;
+  const nodes = document.querySelectorAll('.bubble .math:not([data-done])');
+  if (!nodes.length) return;
+  if (!window.katex){
+    if (katexLoading) return;
+    katexLoading = true;
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
+    js.onload = renderMath;
+    js.onerror = () => { katexLoading = false; };
+    document.head.appendChild(js);
+    return;
+  }
+  nodes.forEach(n => {
+    n.dataset.done = '1';
+    try { katex.render(n.dataset.tex, n, { displayMode: n.classList.contains('math-block'), throwOnError: false }); } catch (e) {}
+  });
+}
+new MutationObserver(() => {
+  if (!mathQueued){ mathQueued = true; requestAnimationFrame(renderMath); }
+}).observe(document.body, { childList: true, subtree: true });
 
 /* ============================================================
    SYNTAX HIGHLIGHTING — deliberately generic/heuristic (not a
